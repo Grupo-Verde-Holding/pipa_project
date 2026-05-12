@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv veiculos.py 1_veiculos.py)",
+      "Bash(mv manutencao.py 2_manutencao.py)",
+      "Bash(mv pneus.py 3_pneus.py)",
+      "Bash(mv movimentacoes.py 4_movimentacoes.py)",
+      "Bash(.venv/Scripts/pip install:*)",
+      "Bash(.venv/Scripts/python -c \"from utils.pdf_generator import gerar_pdf_manutencao; print\\(''PDF generator OK''\\)\")",
+      "Bash(.venv/Scripts/python -c \":*)",
+      "Bash(.venv/Scripts/python -m py_compile app.py)",
+      "Bash(.venv/Scripts/python -m py_compile pages/2_manutencao.py)",
+      "Read(//c/Users/admin/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/**)",
+      "Bash(python scripts/search.py \"fleet management operations dashboard productivity tool\" --design-system -p \"Pipa Frota\" -f markdown)"
+    ]
+  }
+}

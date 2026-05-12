@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pipa Frota — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+
+  <style>
+    /* ── Design Tokens ───────────────────────────────────────────────────────── */
+    :root {
+      --green-900: #14532D;
+      --green-700: #15803D;
+      --green-600: #16A34A;
+      --green-500: #22C55E;
+      --green-400: #4ADE80;
+      --green-200: #BBF7D0;
+      --green-100: #DCFCE7;
+      --green-50:  #F0FDF4;
+
+      --slate-900: #0F172A;
+      --slate-800: #1E293B;
+      --slate-600: #475569;
+      --slate-400: #94A3B8;
+      --slate-200: #E2E8F0;
+      --slate-100: #F1F5F9;
+      --slate-50:  #F8FAFC;
+
+      --amber-500: #F59E0B;
+      --amber-100: #FEF3C7;
+      --red-500:   #EF4444;
+      --red-100:   #FEE2E2;
+      --blue-500:  #3B82F6;
+      --blue-100:  #DBEAFE;
+
+      --white: #FFFFFF;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.06);
+
+      --sidebar-w: 240px;
+      --header-h: 64px;
+      --transition: 180ms ease;
+    }
+
+    /* ── Reset & Base ────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Fira Sans', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--slate-800);
+      background: var(--slate-50);
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, h4, h5 {
+      font-family: 'Fira Sans', sans-serif;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--slate-900);
+    }
+
+    button { cursor: pointer; font-family: inherit; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── Layout Shell ────────────────────────────────────────────────────────── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--white);
+      border-right: 1px solid var(--slate-200);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+      z-index: 100;
+      transition: transform var(--transition);
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--slate-100);
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--green-600);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-text { font-size: 17px; font-weight: 700; color: var(--slate-900); }
+    .logo-text span { color: var(--green-600); }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 12px 12px;
+      overflow-y: auto;
+    }
+
+    .nav-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--slate-400);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      padding: 12px 8px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--slate-600);
+      font-size: 14px;
+      font-weight: 500;
+      transition: background var(--transition), color var(--transition);
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover {
+      background: var(--green-50);
+      color: var(--green-700);
+    }
+
+    .nav-item.active {
+      background: var(--green-100);
+      color: var(--green-700);
+      font-weight: 600;
+    }
+
+    .nav-item svg { flex-shrink: 0; opacity: .8; }
+    .nav-item.active svg { opacity: 1; }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--green-600);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 20px;
+    }
+
+    .sidebar-footer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--slate-100);
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-avatar {
+      width: 34px; height: 34px;
+      background: var(--green-100);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--green-700);
+      flex-shrink: 0;
+    }
+
+    .user-name { font-size: 13px; font-weight: 600; color: var(--slate-800); }
+    .user-role { font-size: 11px; color: var(--slate-400); }
+
+    /* ── Main Wrapper ────────────────────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* ── Top Bar ─────────────────────────────────────────────────────────────── */
+    .topbar {
+      height: var(--header-h);
+      background: var(--white);
+      border-bottom: 1px solid var(--slate-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      padding: 6px;
+      border-radius: var(--radius-sm);
+      color: var(--slate-600);
+      transition: background var(--transition);
+    }
+    .hamburger:hover { background: var(--slate-100); }
+
+    .page-title { font-size: 17px; font-weight: 700; color: var(--slate-900); }
+    .page-subtitle { font-size: 13px; color: var(--slate-400); font-weight: 400; }
+
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+    .topbar-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--slate-200);
+      background: var(--white);
+      color: var(--slate-600);
+      transition: all var(--transition);
+      position: relative;
+    }
+    .topbar-btn:hover { background: var(--slate-50); color: var(--slate-900); border-color: var(--slate-300); }
+
+    .badge-dot {
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 8px; height: 8px;
+      background: var(--red-500);
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--green-600);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background var(--transition), transform 80ms ease, box-shadow var(--transition);
+      box-shadow: 0 1px 2px rgba(22,163,74,.25);
+    }
+    .btn-primary:hover { background: var(--green-700); box-shadow: 0 2px 8px rgba(22,163,74,.35); }
+    .btn-primary:active { transform: scale(.97); }
+
+    /* ── Page Content ────────────────────────────────────────────────────────── */
+    .content { padding: 28px; flex: 1; }
+
+    /* ── Section Header ──────────────────────────────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--slate-900);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .section-title::before {
+      content: '';
+      display: block;
+      width: 3px; height: 16px;
+      background: var(--green-600);
+      border-radius: 4px;
+    }
+
+    .section-link {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--green-600);
+      display: flex; align-items: center; gap: 4px;
+      transition: color var(--transition);
+    }
+    .section-link:hover { color: var(--green-700); }
+
+    /* ── KPI Grid ────────────────────────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .kpi-card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+    }
+    .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); border-color: var(--green-200); }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    .kpi-card.green::before  { background: var(--green-500); }
+    .kpi-card.amber::before  { background: var(--amber-500); }
+    .kpi-card.red::before    { background: var(--red-500); }
+    .kpi-card.blue::before   { background: var(--blue-500); }
+
+    .kpi-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .kpi-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .kpi-icon.green { background: var(--green-100); color: var(--green-700); }
+    .kpi-icon.amber { background: var(--amber-100); color: #B45309; }
+    .kpi-icon.red   { background: var(--red-100);   color: #B91C1C; }
+    .kpi-icon.blue  { background: var(--blue-100);  color: #1D4ED8; }
+
+    .kpi-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      display: flex; align-items: center; gap: 3px;
+    }
+    .kpi-badge.up   { background: var(--green-100); color: var(--green-700); }
+    .kpi-badge.down { background: var(--red-100);   color: #B91C1C; }
+    .kpi-badge.neutral { background: var(--slate-100); color: var(--slate-600); }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--slate-400);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 6px;
+    }
+
+    .kpi-value {
+      font-family: 'Fira Code', monospace;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--slate-900);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .kpi-desc {
+      font-size: 12px;
+      color: var(--slate-400);
+    }
+
+    /* ── Charts Row ──────────────────────────────────────────────────────────── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .charts-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .chart-card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      transition: box-shadow var(--transition);
+    }
+    .chart-card:hover { box-shadow: var(--shadow-sm); }
+
+    .chart-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .chart-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--slate-900);
+    }
+
+    .chart-subtitle {
+      font-size: 12px;
+      color: var(--slate-400);
+      margin-top: 2px;
+    }
+
+    .chart-actions { display: flex; gap: 6px; }
+
+    .chip {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--slate-200);
+      background: var(--white);
+      color: var(--slate-600);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .chip:hover, .chip.active { background: var(--green-100); color: var(--green-700); border-color: var(--green-200); }
+
+    .chart-wrap { position: relative; }
+
+    /* Donut center text */
+    .donut-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+    .donut-center .big { font-family: 'Fira Code', monospace; font-size: 26px; font-weight: 700; color: var(--slate-900); }
+    .donut-center .small { font-size: 11px; color: var(--slate-400); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+
+    /* ── Legend ──────────────────────────────────────────────────────────────── */
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px;
+      color: var(--slate-600);
+    }
+
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Status Indicators ───────────────────────────────────────────────────── */
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .status-pill::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+    .status-pill.active  { background: var(--green-100); color: var(--green-700); }
+    .status-pill.active::before  { background: var(--green-500); }
+    .status-pill.inactive{ background: var(--slate-100); color: var(--slate-600); }
+    .status-pill.inactive::before{ background: var(--slate-400); }
+    .status-pill.warning { background: var(--amber-100); color: #92400E; }
+    .status-pill.warning::before { background: var(--amber-500); }
+    .status-pill.danger  { background: var(--red-100);   color: #991B1B; }
+    .status-pill.danger::before  { background: var(--red-500); }
+
+    /* ── Data Table ──────────────────────────────────────────────────────────── */
+    .table-card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+
+    .table-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--slate-100);
+    }
+
+    .table-search {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-sm);
+      padding: 7px 12px;
+      transition: border-color var(--transition);
+    }
+    .table-search:focus-within { border-color: var(--green-400); background: var(--white); }
+
+    .table-search input {
+      border: none; background: none;
+      font-family: inherit; font-size: 13px;
+      color: var(--slate-800);
+      outline: none;
+      width: 180px;
+    }
+    .table-search input::placeholder { color: var(--slate-400); }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      background: var(--slate-50);
+      border-bottom: 1px solid var(--slate-200);
+    }
+
+    th {
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--slate-400);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: color var(--transition);
+    }
+    th:hover { color: var(--slate-700); }
+    th svg { vertical-align: middle; margin-left: 2px; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--slate-100);
+      transition: background var(--transition);
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--green-50); }
+
+    td {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--slate-700);
+      white-space: nowrap;
+    }
+
+    .td-primary { font-weight: 600; color: var(--slate-900); font-family: 'Fira Code', monospace; }
+    .td-mono    { font-family: 'Fira Code', monospace; color: var(--slate-700); }
+
+    .table-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-top: 1px solid var(--slate-100);
+    }
+
+    .pagination-info { font-size: 13px; color: var(--slate-400); }
+
+    .pagination-btns { display: flex; gap: 4px; }
+    .page-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--slate-600);
+      background: var(--white);
+      transition: all var(--transition);
+    }
+    .page-btn:hover { background: var(--slate-50); color: var(--slate-900); }
+    .page-btn.active { background: var(--green-600); color: white; border-color: var(--green-600); }
+
+    /* ── Alert Banner ────────────────────────────────────────────────────────── */
+    .alert-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; }
+
+    .alert {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      border-left: 4px solid;
+      animation: slideIn 250ms ease-out;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .alert.warning { background: var(--amber-100); border-color: var(--amber-500); }
+    .alert.danger  { background: var(--red-100);   border-color: var(--red-500); }
+    .alert.success { background: var(--green-100); border-color: var(--green-500); }
+
+    .alert-text { flex: 1; font-size: 13px; }
+    .alert-title { font-weight: 700; color: var(--slate-900); }
+    .alert-desc  { color: var(--slate-600); font-size: 12px; }
+
+    .alert-close {
+      background: none; border: none;
+      color: var(--slate-400);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      transition: color var(--transition), background var(--transition);
+    }
+    .alert-close:hover { color: var(--slate-700); background: rgba(0,0,0,.06); }
+
+    /* ── Progress Bars ───────────────────────────────────────────────────────── */
+    .progress-list { display: flex; flex-direction: column; gap: 14px; }
+
+    .progress-item {}
+
+    .progress-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .progress-label { font-size: 13px; font-weight: 600; color: var(--slate-700); }
+    .progress-value { font-family: 'Fira Code', monospace; font-size: 13px; font-weight: 700; color: var(--slate-900); }
+
+    .progress-track {
+      height: 6px;
+      background: var(--slate-100);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 8px;
+      transition: width 600ms cubic-bezier(.34,1.56,.64,1);
+    }
+    .progress-fill.green { background: linear-gradient(90deg, var(--green-500), var(--green-400)); }
+    .progress-fill.amber { background: linear-gradient(90deg, var(--amber-500), #FCD34D); }
+    .progress-fill.red   { background: linear-gradient(90deg, var(--red-500), #F87171); }
+    .progress-fill.blue  { background: linear-gradient(90deg, var(--blue-500), #60A5FA); }
+
+    /* ── Timeline / Activity ─────────────────────────────────────────────────── */
+    .activity-list { display: flex; flex-direction: column; gap: 0; }
+
+    .activity-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--slate-100);
+      transition: background var(--transition);
+    }
+    .activity-item:last-child { border-bottom: none; }
+
+    .activity-dot {
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 1px;
+    }
+    .activity-dot.green { background: var(--green-100); color: var(--green-700); }
+    .activity-dot.amber { background: var(--amber-100); color: #92400E; }
+    .activity-dot.blue  { background: var(--blue-100);  color: #1D4ED8; }
+    .activity-dot.red   { background: var(--red-100);   color: #991B1B; }
+
+    .activity-content { flex: 1; min-width: 0; }
+    .activity-title { font-size: 13px; font-weight: 600; color: var(--slate-900); }
+    .activity-desc  { font-size: 12px; color: var(--slate-500); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .activity-time  { font-size: 11px; color: var(--slate-400); flex-shrink: 0; margin-top: 4px; }
+
+    /* ── Tabs ────────────────────────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--slate-100);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      width: fit-content;
+    }
+
+    .tab {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: none;
+      background: none;
+      color: var(--slate-500);
+      transition: all var(--transition);
+    }
+    .tab.active {
+      background: var(--white);
+      color: var(--slate-900);
+      box-shadow: var(--shadow-sm);
+    }
+    .tab:hover:not(.active) { color: var(--slate-700); }
+
+    /* ── Summary mini-cards row ──────────────────────────────────────────────── */
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .mini-card {
+      background: var(--slate-50);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      text-align: center;
+    }
+
+    .mini-value { font-family: 'Fira Code', monospace; font-size: 18px; font-weight: 700; color: var(--slate-900); }
+    .mini-label { font-size: 11px; color: var(--slate-400); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+
+    /* ── Footer ──────────────────────────────────────────────────────────────── */
+    .content-footer {
+      padding: 16px 28px;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--slate-400);
+    }
+
+    .footer-brand { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+    .footer-brand span { color: var(--green-600); }
+
+    /* ── Scrollbar ───────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--slate-200); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--slate-300); }
+
+    /* ── Focus ───────────────────────────────────────────────────────────────── */
+    :focus-visible {
+      outline: 2px solid var(--green-500);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────────────── */
+    @media (max-width: 1200px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-row-3 { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 1024px) {
+      :root { --sidebar-w: 0px; }
+      .sidebar { transform: translateX(-240px); }
+      .sidebar.open { transform: translateX(0); width: 240px; }
+      .main { margin-left: 0; }
+      .hamburger { display: flex; }
+      .overlay { display: block; }
+    }
+
+    @media (max-width: 768px) {
+      .content { padding: 16px; }
+      .charts-row { grid-template-columns: 1fr; }
+      .charts-row-3 { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .topbar { padding: 0 16px; }
+    }
+
+    @media (max-width: 480px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Overlay ─────────────────────────────────────────────────────────────── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 90;
+      backdrop-filter: blur(2px);
+    }
+
+    /* ── Skeleton loading ────────────────────────────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position:  200% 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, var(--slate-100) 25%, var(--slate-50) 50%, var(--slate-100) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 4px;
+    }
+
+    /* ── Reduced motion ──────────────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar" role="navigation" aria-label="Menu principal">
+    <div class="sidebar-logo">
+      <div class="logo-icon" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+        </svg>
+      </div>
+      <div class="logo-text">Pipa <span>Frota</span></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Principal</div>
+
+      <button class="nav-item active" aria-current="page" onclick="setActive(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+        <span class="nav-badge">Novo</span>
+      </button>
+
+      <button class="nav-item" onclick="setActive(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+        </svg>
+        Veículos
+      </button>
+
+      <button class="nav-item" onclick="setActive(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        Manutenção
+      </button>
+
+      <button class="nav-item" onclick="setActive(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+        </svg>
+        Pneus
+      </button>
+
+      <button class="nav-item" onclick="setActive(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
+        Movimentações
+      </button>
+
+      <div class="nav-section-label">Relatórios</div>
+
+      <button class="nav-item" onclick="setActive(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        Analíticos
+      </button>
+
+      <button class="nav-item" onclick="setActive(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </svg>
+        Exportar
+      </button>
+
+      <div class="nav-section-label">Sistema</div>
+
+      <button class="nav-item" onclick="setActive(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+        </svg>
+        Configurações
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" aria-hidden="true">AD</div>
+        <div>
+          <div class="user-name">Admin</div>
+          <div class="user-role">Gestor de Frota</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile overlay -->
+  <div class="overlay" id="overlay" onclick="closeSidebar()" role="button" aria-label="Fechar menu" tabindex="-1"></div>
+
+  <!-- ── Main ──────────────────────────────────────────────────────────────── -->
+  <div class="main">
+
+    <!-- Top Bar -->
+    <header class="topbar" role="banner">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle" id="lastUpdate">Atualizado agora</div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Period chips -->
+        <div class="tabs" role="tablist" aria-label="Período">
+          <button class="tab" role="tab" onclick="setPeriod(this,'7d')">7d</button>
+          <button class="tab active" role="tab" aria-selected="true" onclick="setPeriod(this,'30d')">30d</button>
+          <button class="tab" role="tab" onclick="setPeriod(this,'90d')">90d</button>
+          <button class="tab" role="tab" onclick="setPeriod(this,'12m')">12m</button>
+        </div>
+
+        <button class="topbar-btn" aria-label="Pesquisar" title="Pesquisar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+
+        <button class="topbar-btn" aria-label="Notificações (3 não lidas)" title="Notificações">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="badge-dot" aria-hidden="true"></span>
+        </button>
+
+        <button class="btn-primary" aria-label="Adicionar veículo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo Veículo
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="content" id="main-content">
+
+      <!-- ── Alerts ─────────────────────────────────────────────────────────── -->
+      <div class="alert-row" id="alerts" aria-live="polite">
+        <div class="alert warning" role="alert">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div class="alert-text">
+            <div class="alert-title">Revisão próxima</div>
+            <div class="alert-desc">3 veículos atingem o limite de KM de revisão nos próximos 30 dias</div>
+          </div>
+          <button class="alert-close" onclick="dismissAlert(this)" aria-label="Dispensar alerta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="alert danger" role="alert">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#991B1B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div class="alert-text">
+            <div class="alert-title">Pneu com desgaste crítico</div>
+            <div class="alert-desc">Pneu DOT 2018 no veículo ABC-1234 precisa de substituição imediata</div>
+          </div>
+          <button class="alert-close" onclick="dismissAlert(this)" aria-label="Dispensar alerta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── KPIs ───────────────────────────────────────────────────────────── -->
+      <div class="section-header">
+        <div class="section-title">Visão Geral da Frota</div>
+        <button class="section-link" onclick="">
+          Ver detalhes
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+      <div class="kpi-grid" role="list">
+        <div class="kpi-card green" role="listitem">
+          <div class="kpi-top">
+            <div class="kpi-icon green" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div class="kpi-badge up" aria-label="Aumento de 4% em relação ao mês anterior">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
+              +4%
+            </div>
+          </div>
+          <div class="kpi-label">Total de Veículos</div>
+          <div class="kpi-value" id="kpi-total">24</div>
+          <div class="kpi-desc">3 adicionados este mês</div>
+        </div>
+
+        <div class="kpi-card green" role="listitem">
+          <div class="kpi-top">
+            <div class="kpi-icon green" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div class="kpi-badge up" aria-label="Aumento de 2%">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
+              +2%
+            </div>
+          </div>
+          <div class="kpi-label">Ativos</div>
+          <div class="kpi-value" id="kpi-active">20</div>
+          <div class="kpi-desc">83% da frota em operação</div>
+        </div>
+
+        <div class="kpi-card amber" role="listitem">
+          <div class="kpi-top">
+            <div class="kpi-icon amber" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div class="kpi-badge neutral">—</div>
+          </div>
+          <div class="kpi-label">Em Manutenção</div>
+          <div class="kpi-value" id="kpi-maintenance">3</div>
+          <div class="kpi-desc">2 retornam essa semana</div>
+        </div>
+
+        <div class="kpi-card red" role="listitem">
+          <div class="kpi-top">
+            <div class="kpi-icon red" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="kpi-badge down" aria-label="Aumento de 12%">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+              +12%
+            </div>
+          </div>
+          <div class="kpi-label">Custo Total (mês)</div>
+          <div class="kpi-value" id="kpi-cost">R$&nbsp;18.420</div>
+          <div class="kpi-desc">Média R$ 921 por veículo</div>
+        </div>
+      </div>
+
+      <!-- ── Charts Row 1 ──────────────────────────────────────────────────── -->
+      <div class="charts-row">
+
+        <!-- Donut – Status da Frota -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-title">Status da Frota</div>
+              <div class="chart-subtitle">Distribuição por estado</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:200px; position:relative;">
+            <canvas id="donutChart" aria-label="Gráfico de pizza: Status da Frota" role="img"></canvas>
+            <div class="donut-center" aria-hidden="true">
+              <div class="big">24</div>
+              <div class="small">veículos</div>
+            </div>
+          </div>
+          <div class="legend" aria-label="Legenda do gráfico">
+            <div class="legend-item"><div class="legend-dot" style="background:#16A34A"></div> Ativos (20)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div> Manutenção (3)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#E2E8F0"></div> Inativos (1)</div>
+          </div>
+        </div>
+
+        <!-- Line – Evolução de Custos -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-title">Evolução de Custos</div>
+              <div class="chart-subtitle">Gastos mensais com manutenção (R$)</div>
+            </div>
+            <div class="chart-actions">
+              <button class="chip active" onclick="toggleChip(this)">Mensal</button>
+              <button class="chip" onclick="toggleChip(this)">Acum.</button>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:220px;">
+            <canvas id="lineChart" aria-label="Gráfico de linha: Evolução de custos mensais" role="img"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Charts Row 2 ──────────────────────────────────────────────────── -->
+      <div class="charts-row-3">
+
+        <!-- Bar – KM por veículo -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-title">KM por Veículo</div>
+              <div class="chart-subtitle">Top 6 por quilometragem</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:220px;">
+            <canvas id="barKmChart" aria-label="Gráfico de barras: KM por veículo" role="img"></canvas>
+          </div>
+        </div>
+
+        <!-- Bar – Custo por veículo -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-title">Custo por Veículo</div>
+              <div class="chart-subtitle">Total gasto no período</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:220px;">
+            <canvas id="barCostChart" aria-label="Gráfico de barras: custo por veículo" role="img"></canvas>
+          </div>
+        </div>
+
+        <!-- Pneus summary -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-title">Status dos Pneus</div>
+              <div class="chart-subtitle">Condição do estoque</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:160px; position:relative;">
+            <canvas id="pneusChart" aria-label="Gráfico de rosca: Status dos pneus" role="img"></canvas>
+          </div>
+          <div class="mini-grid" aria-label="Resumo dos pneus">
+            <div class="mini-card">
+              <div class="mini-value" style="color:var(--green-600)">32</div>
+              <div class="mini-label">Bom</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-value" style="color:var(--amber-500)">8</div>
+              <div class="mini-label">Atenção</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-value" style="color:var(--red-500)">4</div>
+              <div class="mini-label">Crítico</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Bottom Row ─────────────────────────────────────────────────────── -->
+      <div class="charts-row">
+
+        <!-- Top serviços + progress -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-title">Top Serviços</div>
+              <div class="chart-subtitle">Gasto acumulado por tipo</div>
+            </div>
+          </div>
+          <div class="progress-list" role="list">
+            <div class="progress-item" role="listitem">
+              <div class="progress-header">
+                <span class="progress-label">Troca de óleo</span>
+                <span class="progress-value">R$ 4.200</span>
+              </div>
+              <div class="progress-track" role="progressbar" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100" aria-label="Troca de óleo: 72%">
+                <div class="progress-fill green" style="width:72%"></div>
+              </div>
+            </div>
+            <div class="progress-item" role="listitem">
+              <div class="progress-header">
+                <span class="progress-label">Revisão geral</span>
+                <span class="progress-value">R$ 3.650</span>
+              </div>
+              <div class="progress-track" role="progressbar" aria-valuenow="63" aria-valuemin="0" aria-valuemax="100" aria-label="Revisão geral: 63%">
+                <div class="progress-fill green" style="width:63%"></div>
+              </div>
+            </div>
+            <div class="progress-item" role="listitem">
+              <div class="progress-header">
+                <span class="progress-label">Freios</span>
+                <span class="progress-value">R$ 2.900</span>
+              </div>
+              <div class="progress-track" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" aria-label="Freios: 50%">
+                <div class="progress-fill amber" style="width:50%"></div>
+              </div>
+            </div>
+            <div class="progress-item" role="listitem">
+              <div class="progress-header">
+                <span class="progress-label">Suspensão</span>
+                <span class="progress-value">R$ 2.400</span>
+              </div>
+              <div class="progress-track" role="progressbar" aria-valuenow="41" aria-valuemin="0" aria-valuemax="100" aria-label="Suspensão: 41%">
+                <div class="progress-fill blue" style="width:41%"></div>
+              </div>
+            </div>
+            <div class="progress-item" role="listitem">
+              <div class="progress-header">
+                <span class="progress-label">Pneus</span>
+                <span class="progress-value">R$ 1.800</span>
+              </div>
+              <div class="progress-track" role="progressbar" aria-valuenow="31" aria-valuemin="0" aria-valuemax="100" aria-label="Pneus: 31%">
+                <div class="progress-fill red" style="width:31%"></div>
+              </div>
+            </div>
+            <div class="progress-item" role="listitem">
+              <div class="progress-header">
+                <span class="progress-label">Elétrica</span>
+                <span class="progress-value">R$ 1.200</span>
+              </div>
+              <div class="progress-track" role="progressbar" aria-valuenow="21" aria-valuemin="0" aria-valuemax="100" aria-label="Elétrica: 21%">
+                <div class="progress-fill green" style="width:21%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity feed -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-title">Últimas Movimentações</div>
+              <div class="chart-subtitle">Atividade recente da frota</div>
+            </div>
+            <button class="section-link">
+              Ver todas
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+          <div class="activity-list" role="feed" aria-label="Atividades recentes">
+            <article class="activity-item">
+              <div class="activity-dot green" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">ABC-1234 — Troca de óleo concluída</div>
+                <div class="activity-desc">KM: 87.450 · Custo: R$ 320,00</div>
+              </div>
+              <div class="activity-time">há 2h</div>
+            </article>
+            <article class="activity-item">
+              <div class="activity-dot amber" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">DEF-5678 — Entrada em manutenção</div>
+                <div class="activity-desc">Revisão geral programada</div>
+              </div>
+              <div class="activity-time">há 5h</div>
+            </article>
+            <article class="activity-item">
+              <div class="activity-dot blue" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">GHI-9012 — Pneu dianteiro esquerdo trocado</div>
+                <div class="activity-desc">Michelin 195/65 R15 · Posição DE</div>
+              </div>
+              <div class="activity-time">há 1d</div>
+            </article>
+            <article class="activity-item">
+              <div class="activity-dot green" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">JKL-3456 — Revisão de freios concluída</div>
+                <div class="activity-desc">KM: 65.200 · Custo: R$ 850,00</div>
+              </div>
+              <div class="activity-time">há 2d</div>
+            </article>
+            <article class="activity-item">
+              <div class="activity-dot red" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">MNO-7890 — Alerta de revisão atingido</div>
+                <div class="activity-desc">Limite de 100.000 km ultrapassado</div>
+              </div>
+              <div class="activity-time">há 3d</div>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Tabela de Veículos ──────────────────────────────────────────────── -->
+      <div class="section-header">
+        <div class="section-title">Frota Completa</div>
+        <button class="section-link">
+          Exportar CSV
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
+        </button>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <label class="table-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" placeholder="Buscar placa, modelo, marca…" id="tableSearch" oninput="filterTable(this.value)" aria-label="Buscar veículos" />
+          </label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:13px;color:var(--slate-400);" id="tableCount">24 veículos</span>
+            <button class="chip active" onclick="filterStatus(this,'all')">Todos</button>
+            <button class="chip" onclick="filterStatus(this,'ativo')">Ativos</button>
+            <button class="chip" onclick="filterStatus(this,'inativo')">Inativos</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="vehiclesTable" aria-label="Tabela de veículos da frota">
+            <thead>
+              <tr>
+                <th scope="col" onclick="sortTable(0)" aria-sort="none">
+                  Placa <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </th>
+                <th scope="col" onclick="sortTable(1)" aria-sort="none">Modelo</th>
+                <th scope="col" onclick="sortTable(2)" aria-sort="none">Marca</th>
+                <th scope="col" onclick="sortTable(3)" aria-sort="none">
+                  KM Atual <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </th>
+                <th scope="col" onclick="sortTable(4)" aria-sort="none">Última Manutenção</th>
+                <th scope="col" onclick="sortTable(5)" aria-sort="none">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-pagination">
+          <div class="pagination-info" id="pageInfo">Mostrando 1–10 de 24</div>
+          <div class="pagination-btns" role="navigation" aria-label="Paginação">
+            <button class="page-btn" aria-label="Página anterior" onclick="changePage(-1)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button class="page-btn active" aria-current="page" onclick="goToPage(1)">1</button>
+            <button class="page-btn" onclick="goToPage(2)">2</button>
+            <button class="page-btn" onclick="goToPage(3)">3</button>
+            <button class="page-btn" aria-label="Próxima página" onclick="changePage(1)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="content-footer" role="contentinfo">
+      <div class="footer-brand">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Pipa <span>Frota</span> v1.0
+      </div>
+      <div>Dashboard © 2026 · Todos os dados são fictícios</div>
+    </footer>
+
+  </div>
+</div>
+
+<!-- ── Scripts ─────────────────────────────────────────────────────────────── -->
+<script>
+/* ── Data ──────────────────────────────────────────────────────────────────── */
+const vehicles = [
+  { placa:'ABC-1234', modelo:'Sprinter 416', marca:'Mercedes-Benz', km:87450, manutencao:'24/03/2026', status:'ativo' },
+  { placa:'DEF-5678', modelo:'Master 2.3',   marca:'Renault',       km:54200, manutencao:'20/03/2026', status:'manutencao' },
+  { placa:'GHI-9012', modelo:'Daily 3.0',    marca:'Iveco',         km:102800,manutencao:'15/03/2026', status:'ativo' },
+  { placa:'JKL-3456', modelo:'Transit 350',  marca:'Ford',          km:65200, manutencao:'10/03/2026', status:'ativo' },
+  { placa:'MNO-7890', modelo:'Boxer 2.2',    marca:'Peugeot',       km:143600,manutencao:'05/03/2026', status:'ativo' },
+  { placa:'PQR-1122', modelo:'Ducato 2.3',   marca:'Fiat',          km:38900, manutencao:'28/02/2026', status:'ativo' },
+  { placa:'STU-3344', modelo:'Vito 2.0',     marca:'Mercedes-Benz', km:71500, manutencao:'22/02/2026', status:'manutencao' },
+  { placa:'VWX-5566', modelo:'Trafic 1.6',   marca:'Renault',       km:29700, manutencao:'18/02/2026', status:'ativo' },
+  { placa:'YZA-7788', modelo:'Transit Connect',marca:'Ford',        km:48300, manutencao:'14/02/2026', status:'inativo' },
+  { placa:'BCD-9900', modelo:'Crafter 2.0',  marca:'Volkswagen',    km:93100, manutencao:'10/02/2026', status:'ativo' },
+  { placa:'EFG-1234', modelo:'Express 1.3',  marca:'Chevrolet',     km:22400, manutencao:'06/02/2026', status:'ativo' },
+  { placa:'HIJ-5678', modelo:'Jumper 2.2',   marca:'Citroën',       km:67800, manutencao:'01/02/2026', status:'ativo' },
+];
+
+/* ── State ─────────────────────────────────────────────────────────────────── */
+let currentPage = 1;
+const rowsPerPage = 10;
+let filteredVehicles = [...vehicles];
+
+/* ── Init ──────────────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  updateLastUpdate();
+  renderTable();
+  initCharts();
+  animateKPIs();
+});
+
+/* ── Sidebar ───────────────────────────────────────────────────────────────── */
+function toggleSidebar() {
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('overlay');
+  const burger   = document.getElementById('hamburger');
+  const isOpen   = sidebar.classList.toggle('open');
+  overlay.style.display = isOpen ? 'block' : 'none';
+  burger.setAttribute('aria-expanded', isOpen);
+}
+
+function closeSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  sidebar.classList.remove('open');
+  overlay.style.display = 'none';
+  document.getElementById('hamburger').setAttribute('aria-expanded', 'false');
+}
+
+function setActive(el) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ── Period tabs ───────────────────────────────────────────────────────────── */
+function setPeriod(el, period) {
+  document.querySelectorAll('.tabs .tab').forEach(t => {
+    t.classList.remove('active');
+    t.removeAttribute('aria-selected');
+  });
+  el.classList.add('active');
+  el.setAttribute('aria-selected', 'true');
+}
+
+/* ── Chip toggle ───────────────────────────────────────────────────────────── */
+function toggleChip(el) {
+  el.closest('.chart-actions').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ── Alert dismiss ─────────────────────────────────────────────────────────── */
+function dismissAlert(btn) {
+  const alert = btn.closest('.alert');
+  alert.style.opacity = '0';
+  alert.style.transform = 'translateX(8px)';
+  alert.style.transition = 'opacity 200ms ease, transform 200ms ease';
+  setTimeout(() => alert.remove(), 220);
+}
+
+/* ── Last update ───────────────────────────────────────────────────────────── */
+function updateLastUpdate() {
+  const now  = new Date();
+  const time = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  document.getElementById('lastUpdate').textContent = `Atualizado às ${time}`;
+}
+
+/* ── KPI counter animation ─────────────────────────────────────────────────── */
+function animateKPIs() {
+  // Progress bars stagger
+  const fills = document.querySelectorAll('.progress-fill');
+  fills.forEach((fill, i) => {
+    const target = fill.style.width;
+    fill.style.width = '0%';
+    setTimeout(() => { fill.style.width = target; }, 300 + i * 80);
+  });
+}
+
+/* ── Table ─────────────────────────────────────────────────────────────────── */
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const start = (currentPage - 1) * rowsPerPage;
+  const end   = Math.min(start + rowsPerPage, filteredVehicles.length);
+  const page  = filteredVehicles.slice(start, end);
+
+  tbody.innerHTML = page.map(v => {
+    const statusClass = v.status === 'ativo' ? 'active' : v.status === 'manutencao' ? 'warning' : 'inactive';
+    const statusLabel = v.status === 'ativo' ? 'Ativo' : v.status === 'manutencao' ? 'Manutenção' : 'Inativo';
+    return `
+      <tr>
+        <td class="td-primary">${v.placa}</td>
+        <td>${v.modelo}</td>
+        <td>${v.marca}</td>
+        <td class="td-mono">${v.km.toLocaleString('pt-BR')} km</td>
+        <td>${v.manutencao}</td>
+        <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('pageInfo').textContent =
+    `Mostrando ${start+1}–${end} de ${filteredVehicles.length}`;
+  document.getElementById('tableCount').textContent =
+    `${filteredVehicles.length} veículo${filteredVehicles.length !== 1 ? 's' : ''}`;
+
+  // Update pagination buttons
+  document.querySelectorAll('.page-btn[onclick*="goToPage"]').forEach(btn => {
+    btn.classList.remove('active');
+    btn.removeAttribute('aria-current');
+  });
+  const activePage = document.querySelector(`.page-btn[onclick="goToPage(${currentPage})"]`);
+  if (activePage) {
+    activePage.classList.add('active');
+    activePage.setAttribute('aria-current', 'page');
+  }
+}
+
+function filterTable(query) {
+  const q = query.toLowerCase();
+  filteredVehicles = vehicles.filter(v =>
+    v.placa.toLowerCase().includes(q) ||
+    v.modelo.toLowerCase().includes(q) ||
+    v.marca.toLowerCase().includes(q)
+  );
+  currentPage = 1;
+  renderTable();
+}
+
+function filterStatus(btn, status) {
+  document.querySelectorAll('.table-card-header .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  filteredVehicles = status === 'all' ? [...vehicles] : vehicles.filter(v => v.status === status);
+  currentPage = 1;
+  renderTable();
+}
+
+let sortDir = {};
+function sortTable(colIndex) {
+  sortDir[colIndex] = !sortDir[colIndex];
+  const key = ['placa','modelo','marca','km','manutencao','status'][colIndex];
+  filteredVehicles.sort((a, b) => {
+    const av = a[key], bv = b[key];
+    const cmp = typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv), 'pt-BR');
+    return sortDir[colIndex] ? cmp : -cmp;
+  });
+  renderTable();
+}
+
+function goToPage(p) { currentPage = p; renderTable(); }
+function changePage(d) {
+  const maxPage = Math.ceil(filteredVehicles.length / rowsPerPage);
+  currentPage = Math.max(1, Math.min(maxPage, currentPage + d));
+  renderTable();
+}
+
+/* ── Charts ────────────────────────────────────────────────────────────────── */
+function initCharts() {
+  Chart.defaults.font.family = "'Fira Sans', system-ui, sans-serif";
+  Chart.defaults.font.size   = 12;
+  Chart.defaults.color       = '#94A3B8';
+  Chart.defaults.plugins.legend.display = false;
+
+  /* Donut – Status */
+  new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Ativos','Manutenção','Inativos'],
+      datasets: [{
+        data: [20, 3, 1],
+        backgroundColor: ['#16A34A','#F59E0B','#E2E8F0'],
+        borderWidth: 3,
+        borderColor: '#fff',
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      cutout: '72%',
+      animation: { animateRotate: true, duration: 700, easing: 'easeOutQuart' },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.raw} veículos`
+          }
+        }
+      },
+      responsive: true,
+      maintainAspectRatio: false,
+    }
+  });
+
+  /* Line – Evolução de custos */
+  const months = ['Set','Out','Nov','Dez','Jan','Fev','Mar'];
+  new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{
+        label: 'Custo (R$)',
+        data: [12400, 9800, 14200, 18600, 11300, 15800, 18420],
+        borderColor: '#16A34A',
+        backgroundColor: 'rgba(22,163,74,.08)',
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#16A34A',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 600, easing: 'easeOutQuart' },
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` R$ ${ctx.raw.toLocaleString('pt-BR')}`,
+          },
+          backgroundColor: '#fff',
+          borderColor: '#E2E8F0',
+          borderWidth: 1,
+          titleColor: '#1E293B',
+          bodyColor: '#475569',
+          padding: 10,
+          cornerRadius: 8,
+          boxShadow: '0 4px 12px rgba(0,0,0,.08)',
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, border: { display: false } },
+        y: {
+          grid: { color: '#F1F5F9', drawBorder: false },
+          border: { display: false },
+          ticks: { callback: v => 'R$ ' + (v/1000).toFixed(0) + 'k' }
+        }
+      }
+    }
+  });
+
+  /* Bar – KM por veículo */
+  new Chart(document.getElementById('barKmChart'), {
+    type: 'bar',
+    data: {
+      labels: ['ABC-1234','GHI-9012','MNO-7890','BCD-9900','HIJ-5678','JKL-3456'],
+      datasets: [{
+        data: [87450, 102800, 143600, 93100, 67800, 65200],
+        backgroundColor: [
+          'rgba(22,163,74,.85)','rgba(22,163,74,.75)','rgba(22,163,74,.65)',
+          'rgba(22,163,74,.55)','rgba(22,163,74,.45)','rgba(22,163,74,.38)',
+        ],
+        borderRadius: 5,
+        borderSkipped: false,
+        hoverBackgroundColor: '#16A34A',
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 600, easing: 'easeOutQuart' },
+      plugins: {
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toLocaleString('pt-BR')} km` } }
+      },
+      scales: {
+        x: {
+          grid: { color: '#F1F5F9', drawBorder: false },
+          border: { display: false },
+          ticks: { callback: v => (v/1000).toFixed(0)+'k km' }
+        },
+        y: { grid: { display: false }, border: { display: false } }
+      }
+    }
+  });
+
+  /* Bar – Custo por veículo */
+  new Chart(document.getElementById('barCostChart'), {
+    type: 'bar',
+    data: {
+      labels: ['MNO-7890','GHI-9012','ABC-1234','BCD-9900','DEF-5678','HIJ-5678'],
+      datasets: [{
+        data: [4200, 3650, 2900, 2400, 1800, 1200],
+        backgroundColor: [
+          'rgba(22,163,74,.85)','rgba(22,163,74,.72)','rgba(22,163,74,.60)',
+          'rgba(22,163,74,.50)','rgba(22,163,74,.40)','rgba(22,163,74,.32)',
+        ],
+        borderRadius: 5,
+        borderSkipped: false,
+        hoverBackgroundColor: '#16A34A',
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 700, easing: 'easeOutQuart' },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => ` R$ ${ctx.raw.toLocaleString('pt-BR')}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#F1F5F9', drawBorder: false },
+          border: { display: false },
+          ticks: { callback: v => 'R$' + (v/1000).toFixed(0)+'k' }
+        },
+        y: { grid: { display: false }, border: { display: false } }
+      }
+    }
+  });
+
+  /* Donut – Pneus */
+  new Chart(document.getElementById('pneusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Bom','Atenção','Crítico'],
+      datasets: [{
+        data: [32, 8, 4],
+        backgroundColor: ['#16A34A','#F59E0B','#EF4444'],
+        borderWidth: 3,
+        borderColor: '#fff',
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      cutout: '68%',
+      animation: { animateRotate: true, duration: 600, easing: 'easeOutQuart' },
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} pneus` } }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
