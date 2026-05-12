@@ -4,7 +4,6 @@ from datetime import date
 from database.db import listar_veiculos, listar_manutencoes, inserir_manutencao, deletar_manutencao
 from lista_veiculos import veiculos_VW, veiculos_mbenz
 from lista_servicos import servicos
-from utils.pdf_generator import gerar_pdf_manutencao
 
 st.set_page_config(page_title="Manutenção", page_icon="🔧", layout="wide")
 st.title("Manutenção")
@@ -12,28 +11,11 @@ st.title("Manutenção")
 MARCAS = {"VW": veiculos_VW, "MBENZ": veiculos_mbenz}
 
 
-# ── Formatadores ─────────────────────────────────────────────────────────────
 def fmt_km(val):
     try:
         return f"{float(val):,.0f}".replace(",", ".")
     except (TypeError, ValueError):
         return "—"
-
-
-# ── Cache de geração de PDF (evita regerar a cada re-render) ─────────────────
-@st.cache_data(show_spinner=False)
-def _pdf_cached(rec_id, placa, modelo, tipo, data, km_na_data, custo, proxima_km, descricao):
-    registro = {
-        "id":       rec_id,
-        "veiculos": {"placa": placa, "modelo": modelo},
-        "tipo":       tipo,
-        "data":       data,
-        "km_na_data": km_na_data,
-        "custo":      custo,
-        "proxima_km": proxima_km,
-        "descricao":  descricao,
-    }
-    return gerar_pdf_manutencao(registro)
 
 
 # ── Dados ─────────────────────────────────────────────────────────────────────
@@ -60,7 +42,6 @@ with st.expander("Registrar manutenção", expanded=True):
 
     with st.form("form_manutencao", clear_on_submit=True):
         servicos_sel = st.multiselect("Serviços realizados", servicos)
-        st.caption("Selecione um ou mais serviços. O mesmo custo será aplicado a cada um.")
 
         data_manut = st.date_input("Data", value=date.today())
 
@@ -90,7 +71,6 @@ with st.expander("Registrar manutenção", expanded=True):
                     proxima_km=proxima_km if proxima_km > 0 else None,
                 )
             st.success(f"{len(servicos_sel)} serviço(s) registrado(s) com sucesso!")
-            st.cache_data.clear()  # invalida PDFs em cache após novos registros
             st.rerun()
 
 # ── Histórico ─────────────────────────────────────────────────────────────────
@@ -120,7 +100,6 @@ else:
     if filtro_servico != "Todos":
         df = df[df["tipo"] == filtro_servico]
 
-    # Tabela resumida
     df_exibir = df[["veiculo", "tipo", "data", "km_na_data", "proxima_km", "descricao"]].copy()
     df_exibir["km_na_data"] = df_exibir["km_na_data"].apply(fmt_km)
     df_exibir["proxima_km"] = df_exibir["proxima_km"].apply(fmt_km)
@@ -133,55 +112,6 @@ else:
         "descricao":  "Observação",
     }, inplace=True)
     st.dataframe(df_exibir, use_container_width=True, hide_index=True)
-
-    # ── PDF por registro ──────────────────────────────────────────────────────
-    st.divider()
-    st.subheader("Exportar Ordem de Serviço (PDF)")
-    st.caption(
-        "Clique em **Baixar PDF** para gerar a Ordem de Serviço de cada manutenção. "
-        "O arquivo é gerado instantaneamente."
-    )
-
-    # Cabeçalho da lista
-    hdr = st.columns([1.2, 2.5, 4, 1])
-    hdr[0].markdown("**Data**")
-    hdr[1].markdown("**Veículo**")
-    hdr[2].markdown("**Serviço**")
-    hdr[3].markdown("")
-
-    st.markdown(
-        "<hr style='margin:4px 0 8px 0; border-color:#E2E8F0;'>",
-        unsafe_allow_html=True,
-    )
-
-    for i, row in df.iterrows():
-        veh      = row.get("veiculos") or {}
-        placa_r  = veh.get("placa", "")
-        modelo_r = veh.get("modelo", "")
-        tipo_r   = str(row.get("tipo", ""))
-        data_r   = str(row.get("data", ""))
-        km_r     = row.get("km_na_data")
-        custo_r  = row.get("custo")
-        prox_r   = row.get("proxima_km")
-        desc_r   = str(row.get("descricao") or "")
-        rec_id   = row.get("id")
-
-        cols = st.columns([1.2, 2.5, 4, 1])
-        cols[0].write(data_r)
-        cols[1].write(f"{placa_r} — {modelo_r}" if placa_r else "—")
-        cols[2].write(tipo_r[:50] + ("…" if len(tipo_r) > 50 else ""))
-
-        pdf_bytes = _pdf_cached(rec_id, placa_r, modelo_r, tipo_r, data_r,
-                                 km_r, custo_r, prox_r, desc_r)
-        placa_safe = placa_r.replace("-", "").replace(" ", "")
-        cols[3].download_button(
-            label="PDF",
-            data=pdf_bytes,
-            file_name=f"OS_{placa_safe}_{data_r}.pdf",
-            mime="application/pdf",
-            key=f"pdf_{i}_{rec_id}",
-            use_container_width=True,
-        )
 
     # ── Ações ─────────────────────────────────────────────────────────────────
     st.divider()
@@ -212,7 +142,6 @@ else:
             if col_y.button("Confirmar exclusão", type="primary", key="confirm_yes"):
                 deletar_manutencao(manut["id"])
                 st.session_state.confirm_del_manut = False
-                st.cache_data.clear()
                 st.success("Registro excluído.")
                 st.rerun()
             if col_n.button("Cancelar", key="confirm_no"):
