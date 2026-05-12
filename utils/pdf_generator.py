@@ -161,7 +161,6 @@ def gerar_pdf_manutencao(registro: dict) -> bytes:
     data_str   = _safe(registro.get("data", "—"))
     km_data    = _fmt_km(registro.get("km_na_data"))
     prox_km    = _fmt_km(registro.get("proxima_km")) if registro.get("proxima_km") else "—"
-    custo      = _fmt_brl(registro.get("custo"))
     descricao  = _safe(registro.get("descricao") or "—")
     num_os     = str(registro.get("id", "")).zfill(5) if registro.get("id") else "—"
     gerado_em  = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -207,17 +206,15 @@ def gerar_pdf_manutencao(registro: dict) -> bytes:
     ))
     story.append(Spacer(1, 4))
 
-    # Data / Custo / Próxima KM
+    # Data / Próxima KM
     story.append(Table(
         [
-            [Paragraph("DATA",         st_["label"]),
-             Paragraph("CUSTO (R$)",   st_["label"]),
-             Paragraph("PRÓXIMA KM",   st_["label"])],
+            [Paragraph("DATA",       st_["label"]),
+             Paragraph("PRÓXIMA KM", st_["label"])],
             [Paragraph(data_str, st_["value"]),
-             Paragraph(custo,    st_["value"]),
              Paragraph(prox_km,  st_["value"])],
         ],
-        colWidths=[4 * cm, 9 * cm, 4 * cm],
+        colWidths=[8.5 * cm, 8.5 * cm],
         style=_cell_style(),
     ))
     story.append(Spacer(1, 4))

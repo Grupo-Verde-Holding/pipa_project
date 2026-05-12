@@ -20,14 +20,6 @@ def fmt_km(val):
         return "—"
 
 
-def fmt_brl(val):
-    try:
-        v = f"R$ {float(val):,.2f}"
-        return v.replace(",", "X").replace(".", ",").replace("X", ".")
-    except (TypeError, ValueError):
-        return "—"
-
-
 # ── Cache de geração de PDF (evita regerar a cada re-render) ─────────────────
 @st.cache_data(show_spinner=False)
 def _pdf_cached(rec_id, placa, modelo, tipo, data, km_na_data, custo, proxima_km, descricao):
@@ -70,9 +62,7 @@ with st.expander("Registrar manutenção", expanded=True):
         servicos_sel = st.multiselect("Serviços realizados", servicos)
         st.caption("Selecione um ou mais serviços. O mesmo custo será aplicado a cada um.")
 
-        col3, col4 = st.columns(2)
-        data_manut = col3.date_input("Data", value=date.today())
-        custo      = col4.number_input("Custo por serviço (R$)", min_value=0.0, step=10.0, format="%.2f")
+        data_manut = st.date_input("Data", value=date.today())
 
         col5, col6 = st.columns(2)
         km_na_data = col5.number_input("KM na Data", min_value=0.0, step=1.0,
@@ -95,7 +85,7 @@ with st.expander("Registrar manutenção", expanded=True):
                     tipo=servico,
                     data=str(data_manut),
                     km_na_data=km_na_data,
-                    custo=custo,
+                    custo=0.0,
                     descricao=descricao,
                     proxima_km=proxima_km if proxima_km > 0 else None,
                 )
@@ -131,17 +121,15 @@ else:
         df = df[df["tipo"] == filtro_servico]
 
     # Tabela resumida
-    df_exibir = df[["veiculo", "tipo", "data", "km_na_data", "proxima_km", "custo", "descricao"]].copy()
+    df_exibir = df[["veiculo", "tipo", "data", "km_na_data", "proxima_km", "descricao"]].copy()
     df_exibir["km_na_data"] = df_exibir["km_na_data"].apply(fmt_km)
     df_exibir["proxima_km"] = df_exibir["proxima_km"].apply(fmt_km)
-    df_exibir["custo"]      = df_exibir["custo"].apply(fmt_brl)
     df_exibir.rename(columns={
         "veiculo":    "Veículo",
         "tipo":       "Serviço",
         "data":       "Data",
         "km_na_data": "KM na Data",
         "proxima_km": "Próxima KM",
-        "custo":      "Custo (R$)",
         "descricao":  "Observação",
     }, inplace=True)
     st.dataframe(df_exibir, use_container_width=True, hide_index=True)
@@ -155,12 +143,11 @@ else:
     )
 
     # Cabeçalho da lista
-    hdr = st.columns([1.2, 2.5, 3, 1.5, 1])
+    hdr = st.columns([1.2, 2.5, 4, 1])
     hdr[0].markdown("**Data**")
     hdr[1].markdown("**Veículo**")
     hdr[2].markdown("**Serviço**")
-    hdr[3].markdown("**Custo**")
-    hdr[4].markdown("")
+    hdr[3].markdown("")
 
     st.markdown(
         "<hr style='margin:4px 0 8px 0; border-color:#E2E8F0;'>",
@@ -179,16 +166,15 @@ else:
         desc_r   = str(row.get("descricao") or "")
         rec_id   = row.get("id")
 
-        cols = st.columns([1.2, 2.5, 3, 1.5, 1])
+        cols = st.columns([1.2, 2.5, 4, 1])
         cols[0].write(data_r)
         cols[1].write(f"{placa_r} — {modelo_r}" if placa_r else "—")
         cols[2].write(tipo_r[:50] + ("…" if len(tipo_r) > 50 else ""))
-        cols[3].write(fmt_brl(custo_r))
 
         pdf_bytes = _pdf_cached(rec_id, placa_r, modelo_r, tipo_r, data_r,
                                  km_r, custo_r, prox_r, desc_r)
         placa_safe = placa_r.replace("-", "").replace(" ", "")
-        cols[4].download_button(
+        cols[3].download_button(
             label="PDF",
             data=pdf_bytes,
             file_name=f"OS_{placa_safe}_{data_r}.pdf",
