@@ -12,7 +12,9 @@
       "Bash(.venv/Scripts/python -m py_compile pages/2_manutencao.py)",
       "Read(//c/Users/admin/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/**)",
       "Bash(python scripts/search.py \"fleet management operations dashboard productivity tool\" --design-system -p \"Pipa Frota\" -f markdown)",
-      "PowerShell(Get-ChildItem C:\\\\Users\\\\admin\\\\Desktop\\\\pipa_project | Where-Object { $_.Name -ne \".venv\" } | Select-Object Name, PSIsContainer)"
+      "PowerShell(Get-ChildItem C:\\\\Users\\\\admin\\\\Desktop\\\\pipa_project | Where-Object { $_.Name -ne \".venv\" } | Select-Object Name, PSIsContainer)",
+      "Bash(git rm *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

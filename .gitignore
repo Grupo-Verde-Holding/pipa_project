@@ -17,6 +17,7 @@ env/
 # Streamlit secrets
 .streamlit/secrets.toml
 
+
 # Banco de dados
 *.db
 *.sqlite3
