@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import date
-from database.db import listar_veiculos, listar_manutencoes, inserir_manutencao, atualizar_manutencao, deletar_manutencao
+from database.db import listar_veiculos, listar_manutencoes, inserir_manutencao, atualizar_manutencao, deletar_manutencao, atualizar_km
 from lista_veiculos import veiculos_VW, veiculos_mbenz
 from lista_servicos import servicos
 
@@ -78,6 +78,7 @@ with st.expander("Registrar manutenção", expanded=True):
                     descricao=descricao,
                     proxima_km=proxima_km if proxima_km > 0 else None,
                 )
+            atualizar_km(veiculo_sel["id"], km_na_data)
             st.success(f"{len(servicos_sel)} serviço(s) registrado(s) com sucesso!")
             st.rerun()
 
