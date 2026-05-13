@@ -178,4 +178,13 @@ with tab2:
     if filtro_sit != "Todos":
         df_est = df_est[df_est["Situação"] == filtro_sit]
 
-    st.dataframe(df_est, use_container_width=True, hide_index=True)
+    def _cor_situacao(val):
+        if val == "Em estoque":
+            return "background-color: #2d6a4f; color: #ffffff"
+        return "background-color: #95d5b2; color: #1b4332"
+
+    st.dataframe(
+        df_est.style.map(_cor_situacao, subset=["Situação"]),
+        use_container_width=True,
+        hide_index=True,
+    )
