@@ -17,6 +17,4 @@ servicos = ["Ar condicionado - 10.000 à 15.000km",
              "Filtro do Sistema Hidráulico - 30.000 a 80.000km",
              "Filtro Primario e Secundário - Sistema de Combustível - 10.000km a 20.000km",
              "Óleo Lubrificante e Filtro do Motor - 5.000km a 10.000km",
-             "Troca de pneu",
-             "Recapagem"
             ]

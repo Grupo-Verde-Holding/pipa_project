@@ -18,6 +18,13 @@ def fmt_km(val):
         return "—"
 
 
+def fmt_data(val):
+    try:
+        return pd.to_datetime(val).strftime("%d/%m/%Y")
+    except Exception:
+        return str(val) if val else "—"
+
+
 # ── Dados ─────────────────────────────────────────────────────────────────────
 veiculos = listar_veiculos()
 
@@ -103,6 +110,7 @@ else:
     df_exibir = df[["veiculo", "tipo", "data", "km_na_data", "proxima_km", "descricao"]].copy()
     df_exibir["km_na_data"] = df_exibir["km_na_data"].apply(fmt_km)
     df_exibir["proxima_km"] = df_exibir["proxima_km"].apply(fmt_km)
+    df_exibir["data"]       = df_exibir["data"].apply(fmt_data)
     df_exibir.rename(columns={
         "veiculo":    "Veículo",
         "tipo":       "Serviço",
@@ -119,7 +127,7 @@ else:
 
     desc_label   = df["tipo"].str[:50]
     opcoes_manut = {
-        f"{r['data']} | {r['veiculo']} | {desc_label[i]}": r
+        f"{fmt_data(r['data'])} | {r['veiculo']} | {desc_label[i]}": r
         for i, (_, r) in enumerate(df.iterrows())
     }
 

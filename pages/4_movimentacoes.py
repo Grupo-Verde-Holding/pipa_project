@@ -6,16 +6,16 @@ from database.db import (
     inserir_movimentacao, deletar_movimentacao,
 )
 
+
+def fmt_data(val):
+    try:
+        return pd.to_datetime(val).strftime("%d/%m/%Y")
+    except Exception:
+        return str(val) if val else "—"
+
+
 st.set_page_config(page_title="Movimentação de Pneus", page_icon="🔄")
 st.title("Movimentação de Pneus")
-
-POSICOES = [
-    "Dianteiro Esquerdo",
-    "Dianteiro Direito",
-    "Traseiro Esquerdo",
-    "Traseiro Direito",
-    "Estepe",
-]
 
 pneus    = listar_pneus() or []
 veiculos = listar_veiculos() or []
@@ -40,31 +40,22 @@ with tab1:
     with st.expander("Registrar movimentação", expanded=True):
         with st.form("form_movimentacao", clear_on_submit=True):
 
-            # 1. Veículo
             veiculo_label = st.selectbox("Veículo (Placa)", list(opcoes_veiculos.keys()))
             veiculo_sel   = opcoes_veiculos[veiculo_label]
 
-            # 2. Pneu
             pneu_label = st.selectbox("Pneu", list(opcoes_pneus.keys()))
             pneu_sel   = opcoes_pneus[pneu_label]
             condicao   = pneu_sel.get("condicao", "Novo")
 
-            # 3. Tipo de movimentação
             if condicao == "Usado":
-                tipo = st.selectbox("Tipo de movimentação", ["Descarte", "Substituição"])
+                tipo = st.selectbox("Tipo de movimentação", ["Recapagem", "Descarte", "Substituição"])
             else:
                 st.info("Pneu novo — movimento registrado como Instalação.")
                 tipo = "Instalação"
 
-            # 4. Posição + KM
             col1, col2 = st.columns(2)
-            posicao    = col1.selectbox("Posição no veículo", POSICOES)
-            km_veiculo = col2.number_input("KM do veículo", min_value=0.0, step=1.0)
-
-            # 5. Data + Observação
-            col3, col4 = st.columns(2)
-            data_mov   = col3.date_input("Data", value=date.today())
-            observacao = col4.text_input("Observação (opcional)")
+            data_mov   = col1.date_input("Data", value=date.today())
+            observacao = col2.text_input("Observação (opcional)")
 
             submitted = st.form_submit_button("Salvar", use_container_width=True)
 
@@ -74,8 +65,8 @@ with tab1:
                 tipo=tipo,
                 data=str(data_mov),
                 veiculo_id=veiculo_sel["id"],
-                posicao=posicao,
-                km_veiculo=km_veiculo if km_veiculo > 0 else None,
+                posicao=None,
+                km_veiculo=None,
                 observacao=observacao or None,
             )
             st.success("Movimentação registrada com sucesso!")
@@ -116,21 +107,20 @@ with tab1:
         if filtro_tipo != "Todos":
             df_mov = df_mov[df_mov["tipo"] == filtro_tipo]
 
-        cols_disp = [c for c in ["data", "tipo", "pneu", "veiculo", "posicao", "km_veiculo", "observacao"] if c in df_mov.columns]
-        df_exibir = df_mov[cols_disp].rename(columns={
-            "data":        "Data",
-            "tipo":        "Tipo",
-            "pneu":        "Pneu",
-            "veiculo":     "Veículo",
-            "posicao":     "Posição",
-            "km_veiculo":  "KM Veículo",
-            "observacao":  "Observação",
-        })
+        df_exibir = df_mov[["data", "tipo", "pneu", "veiculo", "observacao"]].copy()
+        df_exibir["data"] = df_exibir["data"].apply(fmt_data)
+        df_exibir.rename(columns={
+            "data":       "Data",
+            "tipo":       "Tipo",
+            "pneu":       "Pneu",
+            "veiculo":    "Veículo",
+            "observacao": "Observação",
+        }, inplace=True)
         st.dataframe(df_exibir, use_container_width=True, hide_index=True)
 
         st.divider()
         opcoes_mov = {
-            f"{r['data']} | {r['tipo']} | {r['pneu']}": r
+            f"{fmt_data(r['data'])} | {r['tipo']} | {r['pneu']}": r
             for _, r in df_mov.iterrows()
         }
         if opcoes_mov:
