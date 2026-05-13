@@ -118,16 +118,17 @@ def listar_pneus():
         _erro_conexao(e)
 
 
-def inserir_pneu(codigo: str, marca: str, modelo: str, dot: str, tipo: str, status: str):
+def inserir_pneu(codigo: str, dot: str, status: str, condicao: str):
     try:
         supabase = get_cliente()
         supabase.table("pneus").insert({
             "codigo": codigo,
-            "marca": marca,
-            "modelo": modelo,
-            "dot": dot,
-            "tipo": tipo,
+            "dot": dot.lower() if dot else "",
             "status": status,
+            "condicao": condicao,
+            "marca": None,
+            "modelo": None,
+            "tipo": None,
         }).execute()
     except (httpx.ConnectError, Exception) as e:
         _erro_conexao(e)
@@ -156,7 +157,7 @@ def listar_movimentacoes():
         supabase = get_cliente()
         response = (
             supabase.table("movimentacao_pneus")
-            .select("*, pneus(codigo, marca, modelo), veiculos(placa, modelo)")
+            .select("*, pneus(codigo, dot, condicao), veiculos(placa, modelo)")
             .order("data", desc=True)
             .execute()
         )

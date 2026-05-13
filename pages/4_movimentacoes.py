@@ -9,110 +9,173 @@ from database.db import (
 st.set_page_config(page_title="Movimentação de Pneus", page_icon="🔄")
 st.title("Movimentação de Pneus")
 
-TIPOS = ["Instalação", "Remoção", "Rodízio", "Recapagem", "Descarte"]
-POSICOES = [
-    "Dianteiro Esquerdo",
-    "Dianteiro Direito",
-    "Traseiro Esquerdo",
-    "Traseiro Direito",
-    "Estepe",
-]
+TIPOS_USADO = ["Recapagem", "Descarte", "Substituição"]
 
-pneus    = listar_pneus()
-veiculos = listar_veiculos()
+pneus    = listar_pneus() or []
+veiculos = listar_veiculos() or []
 
 if not pneus:
     st.warning("Nenhum pneu cadastrado. Cadastre um pneu primeiro.")
     st.stop()
 
-opcoes_pneus    = {f"{p['codigo']} — {p['marca']} {p['modelo']}": p["id"] for p in pneus}
+opcoes_pneus    = {f"{p['codigo']} — DOT: {p.get('dot', '')}": p for p in pneus}
 opcoes_veiculos = {f"{v['placa']} — {v['modelo']}": v for v in veiculos}
 
-# --- Formulário ---
-with st.expander("Registrar movimentação", expanded=True):
-    with st.form("form_movimentacao", clear_on_submit=True):
-        col1, col2, col3 = st.columns(3)
-        pneu_label = col1.selectbox("Pneu", list(opcoes_pneus.keys()))
-        tipo       = col2.selectbox("Tipo", TIPOS)
-        data_mov   = col3.date_input("Data", value=date.today())
+tab1, tab2 = st.tabs(["Movimentação", "Estoque"])
 
-        requer_veiculo = tipo in ["Instalação", "Remoção", "Rodízio"]
+# ─────────────────────────────────────────────────────────────
+# TAB 1 — Movimentação
+# ─────────────────────────────────────────────────────────────
+with tab1:
+    with st.expander("Registrar movimentação", expanded=True):
+        with st.form("form_movimentacao", clear_on_submit=True):
+            pneu_label = st.selectbox("Pneu", list(opcoes_pneus.keys()))
+            pneu_sel   = opcoes_pneus[pneu_label]
+            condicao   = pneu_sel.get("condicao", "Novo")
 
-        col4, col5, col6 = st.columns(3)
-        veiculo_opcoes = ["— Nenhum —"] + list(opcoes_veiculos.keys())
-        veiculo_label  = col4.selectbox("Veículo", veiculo_opcoes, disabled=not requer_veiculo)
-        posicao        = col5.selectbox("Posição", ["—"] + POSICOES, disabled=not requer_veiculo)
-        km_veiculo     = col6.number_input("KM do Veículo", min_value=0.0, step=1.0, disabled=not requer_veiculo)
+            if condicao == "Usado":
+                tipo = st.selectbox("Tipo de movimentação", TIPOS_USADO)
+            else:
+                st.info("Pneu novo — nenhuma opção de movimentação necessária.")
+                tipo = "Instalação"
 
-        observacao = st.text_input("Observação (opcional)")
+            col1, col2 = st.columns(2)
+            data_mov   = col1.date_input("Data", value=date.today())
+            observacao = col2.text_input("Observação (opcional)")
 
-        submitted = st.form_submit_button("Salvar", use_container_width=True)
+            submitted = st.form_submit_button("Salvar", use_container_width=True)
 
-    if submitted:
-        vid = opcoes_veiculos[veiculo_label]["id"] if veiculo_label != "— Nenhum —" else None
-        pos = posicao if posicao != "—" else None
-        km  = km_veiculo if km_veiculo > 0 else None
-
-        inserir_movimentacao(
-            pneu_id=opcoes_pneus[pneu_label],
-            tipo=tipo,
-            data=str(data_mov),
-            veiculo_id=vid,
-            posicao=pos,
-            km_veiculo=km,
-            observacao=observacao or None,
-        )
-        st.success("Movimentação registrada com sucesso!")
-        st.rerun()
-
-# --- Histórico ---
-st.divider()
-st.subheader("Histórico de movimentações")
-
-dados = listar_movimentacoes()
-
-if not dados:
-    st.info("Nenhuma movimentação registrada ainda.")
-else:
-    df = pd.DataFrame(dados)
-    df["pneu"]    = df["pneus"].apply(lambda p: f"{p['codigo']} — {p['marca']} {p['modelo']}" if p else "—")
-    df["veiculo"] = df["veiculos"].apply(lambda v: f"{v['placa']} — {v['modelo']}" if v else "—")
-
-    col_f1, col_f2, col_f3 = st.columns(3)
-    filtro_pneu    = col_f1.selectbox("Pneu", ["Todos"] + list(opcoes_pneus.keys()), label_visibility="collapsed")
-    filtro_tipo    = col_f2.selectbox("Tipo", ["Todos"] + TIPOS, label_visibility="collapsed")
-    filtro_veiculo = col_f3.selectbox("Veículo", ["Todos"] + list(opcoes_veiculos.keys()), label_visibility="collapsed")
-
-    if filtro_pneu != "Todos":
-        pid = opcoes_pneus[filtro_pneu]
-        df = df[df["pneu_id"] == pid]
-    if filtro_tipo != "Todos":
-        df = df[df["tipo"] == filtro_tipo]
-    if filtro_veiculo != "Todos":
-        vid = opcoes_veiculos[filtro_veiculo]["id"]
-        df = df[df["veiculo_id"] == vid]
-
-    df_exibir = df[["data", "tipo", "pneu", "veiculo", "posicao", "km_veiculo", "observacao"]].rename(columns={
-        "data": "Data",
-        "tipo": "Tipo",
-        "pneu": "Pneu",
-        "veiculo": "Veículo",
-        "posicao": "Posição",
-        "km_veiculo": "KM Veículo",
-        "observacao": "Observação",
-    })
-    st.dataframe(df_exibir, use_container_width=True, hide_index=True)
-
-    # --- Ações ---
-    st.divider()
-    st.subheader("Ações")
-
-    opcoes_mov = {f"{r['data']} | {r['tipo']} | {r['pneu']}": r for _, r in df.iterrows()}
-    if opcoes_mov:
-        selecionado_label = st.selectbox("Selecionar registro", list(opcoes_mov.keys()))
-        mov = opcoes_mov[selecionado_label]
-
-        if st.button("Excluir registro", type="primary", use_container_width=True):
-            deletar_movimentacao(mov["id"])
-            st.success("Registro excluído.")
+        if submitted:
+            inserir_movimentacao(
+                pneu_id=pneu_sel["id"],
+                tipo=tipo,
+                data=str(data_mov),
+                veiculo_id=None,
+                posicao=None,
+                km_veiculo=None,
+                observacao=observacao or None,
+            )
+            st.success("Movimentação registrada com sucesso!")
             st.rerun()
+
+    # Histórico
+    st.divider()
+    st.subheader("Histórico")
+
+    dados = listar_movimentacoes()
+    if not dados:
+        st.info("Nenhuma movimentação registrada ainda.")
+    else:
+        df = pd.DataFrame(dados)
+        df["pneu"] = df["pneus"].apply(
+            lambda p: f"{p['codigo']} — DOT: {p.get('dot', '')}" if p else "—"
+        )
+
+        # filtrar apenas movimentações (excluir Entrada/Saída de estoque)
+        df_mov = df[~df["tipo"].isin(["Entrada", "Saída"])].copy()
+
+        col_f1, col_f2 = st.columns(2)
+        filtro_pneu = col_f1.selectbox(
+            "Filtrar pneu", ["Todos"] + list(opcoes_pneus.keys()),
+            label_visibility="collapsed", key="f_pneu_mov"
+        )
+        todos_tipos = sorted(df_mov["tipo"].dropna().unique().tolist())
+        filtro_tipo = col_f2.selectbox(
+            "Filtrar tipo", ["Todos"] + todos_tipos,
+            label_visibility="collapsed", key="f_tipo_mov"
+        )
+
+        if filtro_pneu != "Todos":
+            pid = opcoes_pneus[filtro_pneu]["id"]
+            df_mov = df_mov[df_mov["pneu_id"] == pid]
+        if filtro_tipo != "Todos":
+            df_mov = df_mov[df_mov["tipo"] == filtro_tipo]
+
+        df_exibir = df_mov[["data", "tipo", "pneu", "observacao"]].rename(columns={
+            "data":       "Data",
+            "tipo":       "Tipo",
+            "pneu":       "Pneu",
+            "observacao": "Observação",
+        })
+        st.dataframe(df_exibir, use_container_width=True, hide_index=True)
+
+        # Ação de exclusão
+        st.divider()
+        opcoes_mov = {
+            f"{r['data']} | {r['tipo']} | {r['pneu']}": r
+            for _, r in df_mov.iterrows()
+        }
+        if opcoes_mov:
+            selecionado = st.selectbox("Selecionar registro", list(opcoes_mov.keys()))
+            if st.button("Excluir registro", type="primary", use_container_width=True):
+                deletar_movimentacao(opcoes_mov[selecionado]["id"])
+                st.success("Registro excluído.")
+                st.rerun()
+
+# ─────────────────────────────────────────────────────────────
+# TAB 2 — Estoque
+# ─────────────────────────────────────────────────────────────
+with tab2:
+    with st.expander("Registrar entrada / saída", expanded=True):
+        with st.form("form_estoque", clear_on_submit=True):
+            col1, col2, col3 = st.columns(3)
+            pneu_est_label = col1.selectbox("Pneu", list(opcoes_pneus.keys()), key="sel_est")
+            tipo_est       = col2.selectbox("Movimento", ["Entrada", "Saída"])
+            data_est       = col3.date_input("Data", value=date.today(), key="data_est")
+            obs_est        = st.text_input("Observação (opcional)", key="obs_est")
+
+            submitted_est = st.form_submit_button("Registrar", use_container_width=True)
+
+        if submitted_est:
+            pneu_est = opcoes_pneus[pneu_est_label]
+            inserir_movimentacao(
+                pneu_id=pneu_est["id"],
+                tipo=tipo_est,
+                data=str(data_est),
+                veiculo_id=None,
+                posicao=None,
+                km_veiculo=None,
+                observacao=obs_est or None,
+            )
+            st.success(f"{tipo_est} de {pneu_est_label} registrada!")
+            st.rerun()
+
+    # Saldo de estoque
+    st.divider()
+    st.subheader("Saldo de estoque")
+
+    todos_mov = listar_movimentacoes() or []
+
+    # calcular saldo por pneu_id
+    saldo = {}
+    for m in todos_mov:
+        pid = m.get("pneu_id")
+        if pid is None:
+            continue
+        if m["tipo"] == "Entrada":
+            saldo[pid] = saldo.get(pid, 0) + 1
+        elif m["tipo"] == "Saída":
+            saldo[pid] = saldo.get(pid, 0) - 1
+
+    rows = []
+    for p in pneus:
+        s = saldo.get(p["id"], 0)
+        rows.append({
+            "Código":   p["codigo"],
+            "DOT":      p.get("dot", ""),
+            "Condição": p.get("condicao", ""),
+            "Status":   p.get("status", ""),
+            "Saldo":    s,
+            "Situação": "Em estoque" if s > 0 else "Fora do estoque",
+        })
+
+    df_est = pd.DataFrame(rows)
+
+    filtro_sit = st.radio(
+        "Exibir", ["Todos", "Em estoque", "Fora do estoque"],
+        horizontal=True
+    )
+    if filtro_sit != "Todos":
+        df_est = df_est[df_est["Situação"] == filtro_sit]
+
+    st.dataframe(df_est, use_container_width=True, hide_index=True)

@@ -14,7 +14,9 @@
       "Bash(python scripts/search.py \"fleet management operations dashboard productivity tool\" --design-system -p \"Pipa Frota\" -f markdown)",
       "PowerShell(Get-ChildItem C:\\\\Users\\\\admin\\\\Desktop\\\\pipa_project | Where-Object { $_.Name -ne \".venv\" } | Select-Object Name, PSIsContainer)",
       "Bash(git rm *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(findstr /i \"pneu\\\\|tire\\\\|db\")",
+      "Bash(Select-Object FullName)"
     ]
   }
 }
