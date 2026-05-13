@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import date
-from database.db import listar_veiculos, listar_manutencoes, inserir_manutencao, deletar_manutencao
+from database.db import listar_veiculos, listar_manutencoes, inserir_manutencao, atualizar_manutencao, deletar_manutencao
 from lista_veiculos import veiculos_VW, veiculos_mbenz
 from lista_servicos import servicos
 
@@ -33,6 +33,7 @@ if not veiculos:
     st.stop()
 
 veiculos_por_placa = {v["placa"]: v for v in veiculos}
+veiculos_por_id    = {v["id"]: v for v in veiculos}
 
 # ── Formulário de registro ────────────────────────────────────────────────────
 with st.expander("Registrar manutenção", expanded=True):
@@ -94,7 +95,6 @@ else:
         lambda v: f"{v['placa']} — {v['modelo']}" if v else "—"
     )
 
-    # Filtros
     opcoes_veiculos_hist = ["Todos"] + [f"{v['placa']} — {v['modelo']}" for v in veiculos]
     col_f1, col_f2 = st.columns(2)
     filtro_veiculo = col_f1.selectbox("Filtrar por veículo", opcoes_veiculos_hist)
@@ -123,7 +123,7 @@ else:
 
     # ── Ações ─────────────────────────────────────────────────────────────────
     st.divider()
-    st.subheader("Excluir Registro")
+    st.subheader("Ações")
 
     desc_label   = df["tipo"].str[:50]
     opcoes_manut = {
@@ -135,13 +135,52 @@ else:
         selecionado_label = st.selectbox("Selecionar registro", list(opcoes_manut.keys()))
         manut = opcoes_manut[selecionado_label]
 
-        if "confirm_del_manut" not in st.session_state:
-            st.session_state.confirm_del_manut = False
+        col_e, col_d = st.columns(2)
 
-        if st.button("Excluir registro selecionado", use_container_width=True):
-            st.session_state.confirm_del_manut = True
+        if col_e.button("Editar", use_container_width=True, key="btn_editar_manut"):
+            st.session_state["editando_manut"] = manut["id"]
 
-        if st.session_state.confirm_del_manut:
+        if col_d.button("Excluir registro", type="primary", use_container_width=True, key="btn_excluir_manut"):
+            st.session_state["confirm_del_manut"] = True
+
+        # Formulário de edição
+        if st.session_state.get("editando_manut") == manut["id"]:
+            st.divider()
+            st.subheader("Editando registro")
+            with st.form("form_editar_manut"):
+                novo_servico = st.selectbox("Serviço", servicos,
+                                            index=servicos.index(manut["tipo"]) if manut["tipo"] in servicos else 0)
+                col1, col2 = st.columns(2)
+                nova_data      = col1.date_input("Data", value=pd.to_datetime(manut["data"]).date())
+                novo_km        = col2.number_input("KM na Data", min_value=0.0, step=1.0,
+                                                   value=float(manut.get("km_na_data") or 0))
+                col3, col4 = st.columns(2)
+                nova_prox_km   = col3.number_input("Próxima KM", min_value=0.0, step=1.0,
+                                                   value=float(manut.get("proxima_km") or 0))
+                nova_descricao = col4.text_input("Observação", value=manut.get("descricao") or "")
+
+                col_s, col_c = st.columns(2)
+                salvar   = col_s.form_submit_button("Salvar alterações", use_container_width=True)
+                cancelar = col_c.form_submit_button("Cancelar", use_container_width=True)
+
+            if salvar:
+                atualizar_manutencao(
+                    manutencao_id=manut["id"],
+                    tipo=novo_servico,
+                    data=str(nova_data),
+                    km_na_data=novo_km,
+                    proxima_km=nova_prox_km if nova_prox_km > 0 else None,
+                    descricao=nova_descricao or None,
+                )
+                st.success("Registro atualizado com sucesso!")
+                del st.session_state["editando_manut"]
+                st.rerun()
+            if cancelar:
+                del st.session_state["editando_manut"]
+                st.rerun()
+
+        # Confirmação de exclusão
+        if st.session_state.get("confirm_del_manut"):
             st.warning(
                 f"Confirmar exclusão de **{selecionado_label}**? "
                 "Esta ação não pode ser desfeita."

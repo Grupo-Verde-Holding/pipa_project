@@ -59,6 +59,18 @@ def alternar_status(veiculo_id: int, ativo: bool):
         _erro_conexao(e)
 
 
+def atualizar_veiculo(veiculo_id: int, modelo: str, marca: str, km_atual: float):
+    try:
+        supabase = get_cliente()
+        supabase.table("veiculos").update({
+            "modelo": modelo,
+            "marca": marca,
+            "km_atual": km_atual,
+        }).eq("id", veiculo_id).execute()
+    except (httpx.ConnectError, Exception) as e:
+        _erro_conexao(e)
+
+
 def deletar_veiculo(veiculo_id: int):
     try:
         supabase = get_cliente()
@@ -95,6 +107,20 @@ def inserir_manutencao(veiculo_id: int, tipo: str, data: str, km_na_data: float,
             "descricao": descricao,
             "proxima_km": proxima_km,
         }).execute()
+    except (httpx.ConnectError, Exception) as e:
+        _erro_conexao(e)
+
+
+def atualizar_manutencao(manutencao_id: int, tipo: str, data: str, km_na_data: float, proxima_km: float | None, descricao: str | None):
+    try:
+        supabase = get_cliente()
+        supabase.table("manutencoes").update({
+            "tipo": tipo,
+            "data": data,
+            "km_na_data": km_na_data,
+            "proxima_km": proxima_km,
+            "descricao": descricao,
+        }).eq("id", manutencao_id).execute()
     except (httpx.ConnectError, Exception) as e:
         _erro_conexao(e)
 
@@ -139,6 +165,19 @@ def atualizar_status_pneu(pneu_id: int, status: str):
         _erro_conexao(e)
 
 
+def atualizar_pneu(pneu_id: int, dot: str, condicao: str, status: str, localidade_servico: str | None):
+    try:
+        supabase = get_cliente()
+        supabase.table("pneus").update({
+            "dot": dot.lower() if dot else "",
+            "condicao": condicao,
+            "status": status,
+            "localidade_servico": localidade_servico or None,
+        }).eq("id", pneu_id).execute()
+    except (httpx.ConnectError, Exception) as e:
+        _erro_conexao(e)
+
+
 def deletar_pneu(pneu_id: int):
     try:
         supabase = get_cliente()
@@ -175,6 +214,19 @@ def inserir_movimentacao(pneu_id: int, tipo: str, data: str, veiculo_id: int | N
             "km_veiculo": km_veiculo,
             "observacao": observacao,
         }).execute()
+    except (httpx.ConnectError, Exception) as e:
+        _erro_conexao(e)
+
+
+def atualizar_movimentacao(mov_id: int, tipo: str, data: str, veiculo_id: int | None, observacao: str | None):
+    try:
+        supabase = get_cliente()
+        supabase.table("movimentacao_pneus").update({
+            "tipo": tipo,
+            "data": data,
+            "veiculo_id": veiculo_id,
+            "observacao": observacao,
+        }).eq("id", mov_id).execute()
     except (httpx.ConnectError, Exception) as e:
         _erro_conexao(e)
 

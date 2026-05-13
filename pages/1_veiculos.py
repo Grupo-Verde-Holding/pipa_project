@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from database.db import listar_veiculos, inserir_veiculo, alternar_status, deletar_veiculo
+from database.db import listar_veiculos, inserir_veiculo, atualizar_veiculo, alternar_status, deletar_veiculo
 from lista_veiculos import veiculos_VW, veiculos_mbenz
 
 st.set_page_config(page_title="Veículos", page_icon="🚗")
@@ -68,12 +68,42 @@ else:
     selecionado_label = st.selectbox("Selecionar veículo", list(opcoes.keys()))
     veiculo = opcoes[selecionado_label]
 
-    col_a, col_b = st.columns(2)
-    if col_a.button("Ativar / Desativar", use_container_width=True):
+    col_a, col_b, col_c = st.columns(3)
+
+    if col_a.button("Editar", use_container_width=True):
+        st.session_state["editando_veiculo"] = veiculo["id"]
+
+    if col_b.button("Ativar / Desativar", use_container_width=True):
         alternar_status(veiculo["id"], veiculo["ativo"])
         st.rerun()
 
-    if col_b.button("Excluir veículo", type="primary", use_container_width=True):
+    if col_c.button("Excluir veículo", type="primary", use_container_width=True):
         deletar_veiculo(veiculo["id"])
         st.success(f"Veículo {veiculo['placa']} excluído.")
         st.rerun()
+
+    # --- Formulário de edição ---
+    if st.session_state.get("editando_veiculo") == veiculo["id"]:
+        st.divider()
+        st.subheader(f"Editando: {veiculo['placa']}")
+        with st.form("form_editar_veiculo"):
+            col1, col2 = st.columns(2)
+            novo_modelo = col1.text_input("Modelo", value=veiculo.get("modelo", ""))
+            nova_marca  = col2.selectbox("Marca", list(MARCAS.keys()),
+                                         index=list(MARCAS.keys()).index(veiculo.get("marca", "VW"))
+                                         if veiculo.get("marca") in MARCAS else 0)
+            novo_km = st.number_input("KM Atual", min_value=0.0, step=1.0,
+                                      value=float(veiculo.get("km_atual", 0)))
+
+            col_s, col_c2 = st.columns(2)
+            salvar   = col_s.form_submit_button("Salvar alterações", use_container_width=True)
+            cancelar = col_c2.form_submit_button("Cancelar", use_container_width=True)
+
+        if salvar:
+            atualizar_veiculo(veiculo["id"], novo_modelo, nova_marca, novo_km)
+            st.success("Veículo atualizado com sucesso!")
+            del st.session_state["editando_veiculo"]
+            st.rerun()
+        if cancelar:
+            del st.session_state["editando_veiculo"]
+            st.rerun()

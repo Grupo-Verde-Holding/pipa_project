@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import date
 from database.db import (
     listar_veiculos, listar_pneus, listar_movimentacoes,
-    inserir_movimentacao, deletar_movimentacao,
+    inserir_movimentacao, atualizar_movimentacao, deletar_movimentacao,
 )
 
 
@@ -31,6 +31,8 @@ if not veiculos:
 opcoes_pneus    = {f"DOT: {p.get('dot', '')} | ID: {p['id']}": p for p in pneus}
 opcoes_veiculos = {f"{v['placa']} — {v['modelo']}": v for v in veiculos}
 
+TIPOS_USADO = ["Recapagem", "Descarte", "Substituição"]
+
 tab1, tab2 = st.tabs(["Movimentação", "Estoque"])
 
 # ─────────────────────────────────────────────────────────────
@@ -39,7 +41,6 @@ tab1, tab2 = st.tabs(["Movimentação", "Estoque"])
 with tab1:
     with st.expander("Registrar movimentação", expanded=True):
         with st.form("form_movimentacao", clear_on_submit=True):
-
             veiculo_label = st.selectbox("Veículo (Placa)", list(opcoes_veiculos.keys()))
             veiculo_sel   = opcoes_veiculos[veiculo_label]
 
@@ -48,7 +49,7 @@ with tab1:
             condicao   = pneu_sel.get("condicao", "Novo")
 
             if condicao == "Usado":
-                tipo = st.selectbox("Tipo de movimentação", ["Recapagem", "Descarte", "Substituição"])
+                tipo = st.selectbox("Tipo de movimentação", TIPOS_USADO)
             else:
                 st.info("Pneu novo — movimento registrado como Instalação.")
                 tipo = "Instalação"
@@ -118,6 +119,7 @@ with tab1:
         }, inplace=True)
         st.dataframe(df_exibir, use_container_width=True, hide_index=True)
 
+        # Ações
         st.divider()
         opcoes_mov = {
             f"{fmt_data(r['data'])} | {r['tipo']} | {r['pneu']}": r
@@ -125,10 +127,64 @@ with tab1:
         }
         if opcoes_mov:
             selecionado = st.selectbox("Selecionar registro", list(opcoes_mov.keys()))
-            if st.button("Excluir registro", type="primary", use_container_width=True):
-                deletar_movimentacao(opcoes_mov[selecionado]["id"])
+            mov = opcoes_mov[selecionado]
+
+            col_e, col_d = st.columns(2)
+
+            if col_e.button("Editar", use_container_width=True, key="btn_editar_mov"):
+                st.session_state["editando_mov"] = mov["id"]
+
+            if col_d.button("Excluir registro", type="primary", use_container_width=True, key="btn_excluir_mov"):
+                deletar_movimentacao(mov["id"])
                 st.success("Registro excluído.")
                 st.rerun()
+
+            # Formulário de edição
+            if st.session_state.get("editando_mov") == mov["id"]:
+                st.divider()
+                st.subheader("Editando movimentação")
+
+                # define tipo atual
+                condicao_mov = mov["pneus"].get("condicao", "Novo") if mov.get("pneus") else "Novo"
+
+                with st.form("form_editar_mov"):
+                    novo_veiculo_label = st.selectbox(
+                        "Veículo", list(opcoes_veiculos.keys()),
+                        index=next((i for i, v in enumerate(opcoes_veiculos.values())
+                                    if v["id"] == mov.get("veiculo_id")), 0)
+                    )
+
+                    if condicao_mov == "Usado":
+                        novo_tipo = st.selectbox(
+                            "Tipo", TIPOS_USADO,
+                            index=TIPOS_USADO.index(mov["tipo"]) if mov["tipo"] in TIPOS_USADO else 0
+                        )
+                    else:
+                        st.info("Pneu novo — tipo fixo: Instalação.")
+                        novo_tipo = "Instalação"
+
+                    col1, col2 = st.columns(2)
+                    nova_data      = col1.date_input("Data", value=pd.to_datetime(mov["data"]).date())
+                    nova_observacao = col2.text_input("Observação", value=mov.get("observacao") or "")
+
+                    col_s, col_c = st.columns(2)
+                    salvar   = col_s.form_submit_button("Salvar alterações", use_container_width=True)
+                    cancelar = col_c.form_submit_button("Cancelar", use_container_width=True)
+
+                if salvar:
+                    atualizar_movimentacao(
+                        mov_id=mov["id"],
+                        tipo=novo_tipo,
+                        data=str(nova_data),
+                        veiculo_id=opcoes_veiculos[novo_veiculo_label]["id"],
+                        observacao=nova_observacao or None,
+                    )
+                    st.success("Movimentação atualizada com sucesso!")
+                    del st.session_state["editando_mov"]
+                    st.rerun()
+                if cancelar:
+                    del st.session_state["editando_mov"]
+                    st.rerun()
 
 # ─────────────────────────────────────────────────────────────
 # TAB 2 — Estoque
