@@ -112,23 +112,20 @@ def deletar_manutencao(manutencao_id: int):
 def listar_pneus():
     try:
         supabase = get_cliente()
-        response = supabase.table("pneus").select("*").order("marca").execute()
+        response = supabase.table("pneus").select("*").order("dot").execute()
         return response.data
     except (httpx.ConnectError, Exception) as e:
         _erro_conexao(e)
 
 
-def inserir_pneu(codigo: str, dot: str, status: str, condicao: str):
+def inserir_pneu(dot: str, condicao: str, status: str, localidade_servico: str | None):
     try:
         supabase = get_cliente()
         supabase.table("pneus").insert({
-            "codigo": codigo,
             "dot": dot.lower() if dot else "",
-            "status": status,
             "condicao": condicao,
-            "marca": None,
-            "modelo": None,
-            "tipo": None,
+            "status": status,
+            "localidade_servico": localidade_servico or None,
         }).execute()
     except (httpx.ConnectError, Exception) as e:
         _erro_conexao(e)
@@ -157,7 +154,7 @@ def listar_movimentacoes():
         supabase = get_cliente()
         response = (
             supabase.table("movimentacao_pneus")
-            .select("*, pneus(codigo, dot, condicao), veiculos(placa, modelo)")
+            .select("*, pneus(id, dot, condicao), veiculos(placa, modelo)")
             .order("data", desc=True)
             .execute()
         )

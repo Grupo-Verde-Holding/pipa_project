@@ -18,7 +18,7 @@ if not pneus:
     st.warning("Nenhum pneu cadastrado. Cadastre um pneu primeiro.")
     st.stop()
 
-opcoes_pneus    = {f"{p['codigo']} — DOT: {p.get('dot', '')}": p for p in pneus}
+opcoes_pneus    = {f"DOT: {p.get('dot', '')} | ID: {p['id']}": p for p in pneus}
 opcoes_veiculos = {f"{v['placa']} — {v['modelo']}": v for v in veiculos}
 
 tab1, tab2 = st.tabs(["Movimentação", "Estoque"])
@@ -68,7 +68,7 @@ with tab1:
     else:
         df = pd.DataFrame(dados)
         df["pneu"] = df["pneus"].apply(
-            lambda p: f"{p['codigo']} — DOT: {p.get('dot', '')}" if p else "—"
+            lambda p: f"DOT: {p.get('dot', '')} | ID: {p['id']}" if p else "—"
         )
 
         # filtrar apenas movimentações (excluir Entrada/Saída de estoque)
