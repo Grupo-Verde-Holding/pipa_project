@@ -10,10 +10,15 @@ with st.expander("Cadastrar pneu", expanded=True):
     with st.form("form_pneu", clear_on_submit=True):
         dot = st.text_input("DOT", placeholder="ex: 2324")
 
+        LOCALIDADES = [
+            "Quissamã", "Macaé", "Base", "Itaperuna", "Italva",
+            "Varre Sai", "Porciúncula", "São João da Barra", "Muriaé", "Cardoso Moreira",
+        ]
+
         col1, col2, col3 = st.columns(3)
         condicao           = col1.selectbox("Condição", ["Novo", "Usado"])
         status             = col2.selectbox("Status", ["Ativo", "Substituído"])
-        localidade_servico = col3.text_input("Localidade de serviço", placeholder="ex: São Paulo")
+        localidade_servico = col3.selectbox("Localidade de serviço", LOCALIDADES)
 
         submitted = st.form_submit_button("Salvar", use_container_width=True)
 
