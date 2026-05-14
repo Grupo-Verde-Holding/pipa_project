@@ -5,7 +5,7 @@ from database.db import listar_veiculos, inserir_veiculo, atualizar_veiculo, alt
 st.set_page_config(page_title="Veículos", page_icon="🚗")
 st.title("Veículos")
 
-MARCAS = ["VW", "Mercedes-Benz", "Iveco", "Volvo", "Scania", "Ford", "Outro"]
+MARCAS = ["VW", "MBENZ"]
 
 # --- Formulário de cadastro ---
 with st.expander("Cadastrar novo veículo", expanded=True):
@@ -93,7 +93,7 @@ else:
             marca_atual = veiculo.get("marca", MARCAS[0])
             nova_marca  = col2.selectbox(
                 "Marca", MARCAS,
-                index=MARCAS.index(marca_atual) if marca_atual in MARCAS else len(MARCAS) - 1
+                index=MARCAS.index(marca_atual) if marca_atual in MARCAS else 0
             )
             novo_km = st.number_input("KM Atual", min_value=0.0, step=1.0, format="%.0f",
                                       value=float(veiculo.get("km_atual", 0)))
