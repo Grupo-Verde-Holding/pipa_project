@@ -14,20 +14,20 @@ LOCALIDADES = [
 SUBTIPOS_USADO = ["Recapado", "Descarte", "Estepe"]
 
 with st.expander("Cadastrar pneu", expanded=True):
+    col1, col2, col3 = st.columns(3)
+    condicao = col1.selectbox("Condição", ["Novo", "Usado"])
+
     with st.form("form_pneu", clear_on_submit=True):
         dot = st.text_input("DOT", placeholder="ex: 2324")
 
-        col1, col2, col3 = st.columns(3)
-        condicao           = col1.selectbox("Condição", ["Novo", "Usado"])
-        status             = col2.selectbox("Status", ["Ativo", "Substituído"])
-        localidade_servico = col3.selectbox("Localidade de serviço", LOCALIDADES)
+        col_b, col_c = st.columns(2)
+        status             = col_b.selectbox("Status", ["Ativo", "Substituído"])
+        localidade_servico = col_c.selectbox("Localidade de serviço", LOCALIDADES)
 
-        subtipo_usado = st.selectbox(
-            "Tipo de usado",
-            SUBTIPOS_USADO,
-            help="Aplicável apenas quando a condição for 'Usado'",
-            disabled=(condicao == "Novo"),
-        )
+        if condicao == "Usado":
+            subtipo_usado = st.selectbox("Tipo de usado", SUBTIPOS_USADO)
+        else:
+            subtipo_usado = None
 
         submitted = st.form_submit_button("Salvar", use_container_width=True)
 
@@ -40,7 +40,7 @@ with st.expander("Cadastrar pneu", expanded=True):
                 condicao=condicao,
                 status=status,
                 localidade_servico=localidade_servico.strip() or None,
-                subtipo_usado=subtipo_usado if condicao == "Usado" else None,
+                subtipo_usado=subtipo_usado,
             )
             st.success(f"Pneu DOT {dot.strip().lower()} cadastrado com sucesso!")
             st.rerun()
