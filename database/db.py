@@ -144,7 +144,7 @@ def listar_pneus():
         _erro_conexao(e)
 
 
-def inserir_pneu(dot: str, condicao: str, status: str, localidade_servico: str | None):
+def inserir_pneu(dot: str, condicao: str, status: str, localidade_servico: str | None, subtipo_usado: str | None = None):
     try:
         supabase = get_cliente()
         supabase.table("pneus").insert({
@@ -152,6 +152,7 @@ def inserir_pneu(dot: str, condicao: str, status: str, localidade_servico: str |
             "condicao": condicao,
             "status": status,
             "localidade_servico": localidade_servico or None,
+            "subtipo_usado": subtipo_usado if condicao == "Usado" else None,
         }).execute()
     except (httpx.ConnectError, Exception) as e:
         _erro_conexao(e)
@@ -165,7 +166,7 @@ def atualizar_status_pneu(pneu_id: int, status: str):
         _erro_conexao(e)
 
 
-def atualizar_pneu(pneu_id: int, dot: str, condicao: str, status: str, localidade_servico: str | None):
+def atualizar_pneu(pneu_id: int, dot: str, condicao: str, status: str, localidade_servico: str | None, subtipo_usado: str | None = None):
     try:
         supabase = get_cliente()
         supabase.table("pneus").update({
@@ -173,6 +174,7 @@ def atualizar_pneu(pneu_id: int, dot: str, condicao: str, status: str, localidad
             "condicao": condicao,
             "status": status,
             "localidade_servico": localidade_servico or None,
+            "subtipo_usado": subtipo_usado if condicao == "Usado" else None,
         }).eq("id", pneu_id).execute()
     except (httpx.ConnectError, Exception) as e:
         _erro_conexao(e)

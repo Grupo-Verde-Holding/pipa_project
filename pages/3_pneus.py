@@ -11,6 +11,8 @@ LOCALIDADES = [
 ]
 
 # --- Formulário ---
+SUBTIPOS_USADO = ["Recapado", "Descarte", "Estepe"]
+
 with st.expander("Cadastrar pneu", expanded=True):
     with st.form("form_pneu", clear_on_submit=True):
         dot = st.text_input("DOT", placeholder="ex: 2324")
@@ -19,6 +21,13 @@ with st.expander("Cadastrar pneu", expanded=True):
         condicao           = col1.selectbox("Condição", ["Novo", "Usado"])
         status             = col2.selectbox("Status", ["Ativo", "Substituído"])
         localidade_servico = col3.selectbox("Localidade de serviço", LOCALIDADES)
+
+        subtipo_usado = st.selectbox(
+            "Tipo de usado",
+            SUBTIPOS_USADO,
+            help="Aplicável apenas quando a condição for 'Usado'",
+            disabled=(condicao == "Novo"),
+        )
 
         submitted = st.form_submit_button("Salvar", use_container_width=True)
 
@@ -31,6 +40,7 @@ with st.expander("Cadastrar pneu", expanded=True):
                 condicao=condicao,
                 status=status,
                 localidade_servico=localidade_servico.strip() or None,
+                subtipo_usado=subtipo_usado if condicao == "Usado" else None,
             )
             st.success(f"Pneu DOT {dot.strip().lower()} cadastrado com sucesso!")
             st.rerun()
@@ -61,11 +71,12 @@ else:
     if filtro_status != "Todos":
         df = df[df["status"] == filtro_status]
 
-    colunas = [c for c in ["id", "dot", "condicao", "status", "localidade_servico"] if c in df.columns]
+    colunas = [c for c in ["id", "dot", "condicao", "subtipo_usado", "status", "localidade_servico"] if c in df.columns]
     df_exibir = df[colunas].rename(columns={
         "id":                 "ID",
         "dot":                "DOT",
         "condicao":           "Condição",
+        "subtipo_usado":      "Tipo de Usado",
         "status":             "Status",
         "localidade_servico": "Localidade de Serviço",
     })
@@ -119,6 +130,14 @@ else:
                     index=LOCALIDADES.index(loc_atual) if loc_atual in LOCALIDADES else 0
                 )
 
+                subtipo_atual = pneu.get("subtipo_usado") or SUBTIPOS_USADO[0]
+                novo_subtipo = st.selectbox(
+                    "Tipo de usado", SUBTIPOS_USADO,
+                    index=SUBTIPOS_USADO.index(subtipo_atual) if subtipo_atual in SUBTIPOS_USADO else 0,
+                    help="Aplicável apenas quando a condição for 'Usado'",
+                    disabled=(nova_condicao == "Novo"),
+                )
+
                 col_s, col_c2 = st.columns(2)
                 salvar   = col_s.form_submit_button("Salvar alterações", use_container_width=True)
                 cancelar = col_c2.form_submit_button("Cancelar", use_container_width=True)
@@ -130,6 +149,7 @@ else:
                     condicao=nova_condicao,
                     status=novo_status_edit,
                     localidade_servico=nova_localidade or None,
+                    subtipo_usado=novo_subtipo if nova_condicao == "Usado" else None,
                 )
                 st.success("Pneu atualizado com sucesso!")
                 del st.session_state["editando_pneu"]
