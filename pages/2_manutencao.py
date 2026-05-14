@@ -2,13 +2,10 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 from database.db import listar_veiculos, listar_manutencoes, inserir_manutencao, atualizar_manutencao, deletar_manutencao, atualizar_km
-from lista_veiculos import veiculos_VW, veiculos_mbenz
 from lista_servicos import servicos
 
 st.set_page_config(page_title="Manutenção", page_icon="🔧", layout="wide")
 st.title("Manutenção")
-
-MARCAS = {"VW": veiculos_VW, "MBENZ": veiculos_mbenz}
 
 
 def fmt_km(val):
@@ -35,18 +32,21 @@ if not veiculos:
 veiculos_por_placa = {v["placa"]: v for v in veiculos}
 veiculos_por_id    = {v["id"]: v for v in veiculos}
 
+marcas_disponiveis = sorted({v["marca"] for v in veiculos if v.get("marca")})
+
 # ── Formulário de registro ────────────────────────────────────────────────────
 with st.expander("Registrar manutenção", expanded=True):
     col1, col2 = st.columns(2)
-    marca_sel = col1.selectbox("Marca", list(MARCAS.keys()), key="marca_manut")
+    marca_sel = col1.selectbox("Marca", marcas_disponiveis, key="marca_manut")
 
-    placas_marca = [p for p in MARCAS[marca_sel] if p in veiculos_por_placa]
-    if not placas_marca:
-        st.warning(f"Nenhum veículo {marca_sel} cadastrado ainda.")
+    veiculos_marca = [v for v in veiculos if v.get("marca") == marca_sel]
+    if not veiculos_marca:
+        col2.warning(f"Nenhum veículo {marca_sel} cadastrado ainda.")
         st.stop()
 
-    placa_sel   = col2.selectbox("Veículo (Placa)", placas_marca, key="placa_manut")
-    veiculo_sel = veiculos_por_placa[placa_sel]
+    opcoes_placa = {f"{v['placa']} — {v['modelo']}": v for v in veiculos_marca}
+    placa_label  = col2.selectbox("Veículo", list(opcoes_placa.keys()), key="placa_manut")
+    veiculo_sel  = opcoes_placa[placa_label]
 
     with st.form("form_manutencao", clear_on_submit=True):
         servicos_sel = st.multiselect("Serviços realizados", servicos)
